@@ -135,8 +135,8 @@ Warning: QT_DEVICE_PIXEL_RATIO is deprecated. Instead use:
 
 #include <QApplication>
 
-// 导入头文件
-#include <QByteArray>
+// 导入头文件【也可以不导入，因为<QApplication>中已经包含了<QByteArray>】
+// #include <QByteArray>
 
 int main(int argc, char *argv[])
 {
@@ -173,14 +173,14 @@ int main(int argc, char *argv[])
 INCLUDEPATH += %FFMPEG_BUILD%/include
 
 # 设置静态库文件的目录和需要链接的静态库
-LIBS += -L %FFMPEG_BUILD%/lib\
-        -lavcodec\
-        -lavdevice\
-        -lavfilter\
-        -lavformat\
-        -lavutil\
-        -lpostproc\
-        -lswscale\
+LIBS += -L %FFMPEG_BUILD%/lib \
+        -lavcodec \
+        -lavdevice \
+        -lavfilter \
+        -lavformat \
+        -lavutil \
+        -lpostproc \
+        -lswscale \
         -lswresample
 ```
 
@@ -201,7 +201,6 @@ LIBS += -L %FFMPEG_BUILD%/lib\
 #include "mainwindow.h"
 
 #include <QApplication>
-#include <QByteArray>
 
 // 为了使用qDebug函数
 #include <QDebug>
@@ -214,8 +213,6 @@ extern "C" {
 
 int main(int argc, char *argv[])
 {
-    qputenv("QT_SCALE_FACTOR", QByteArray("1"));
-    
     // 打印版本信息
     qDebug() << av_version_info();
     
