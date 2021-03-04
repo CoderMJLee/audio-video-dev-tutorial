@@ -225,7 +225,11 @@ int main(int argc, char *argv[])
 
 #### 拷贝dll文件
 
-将**%FFMPEG_BUILD%/bin**目录中的所有dll文件拷贝到exe文件（Windows中的一种可执行文件）所在的目录中。
+Qt程序编译成功后，会生成一个exe文件
+- exe是Windows中的一种可执行文件
+- 我们编写的程序代码最终都存在了exe文件中
+
+为了保证exe在运行时能成功调用FFmpeg的函数，那么就得让exe能够找到FFmpeg的dll文件（动态库文件）。可以将**%FFMPEG_BUILD%/bin**目录中的所有dll文件拷贝到exe文件所在的目录中，exe在运行的时候，能自动找到跟它同一目录下的dll文件。
 
 ![](https://img2020.cnblogs.com/blog/497279/202103/497279-20210303100542709-187646790.png)
 
@@ -236,6 +240,22 @@ int main(int argc, char *argv[])
 运行程序后，如果能在控制台看到**4.3.2**字样的输出信息，说明FFmpeg已经集成成功。
 
 ![](https://img2020.cnblogs.com/blog/497279/202103/497279-20210303100603623-1729439411.png)
+
+#### dll的搜索顺序
+
+exe在寻找dll文件时，大概按照以下优先级顺序去查找（这里只列出了大概的搜索路径，并没有写全）：
+1. exe所在的目录
+
+2. Windows的System目录
+   - C:/Windows/System
+   - C:/Windows/System32
+3. Windows目录
+   - C:/Windows
+4. 环境变量Path中的路径
+    - 所以可以考虑将**%FFMPEG_BUILD%/bin**目录配置到Path变量中
+    - 置于如何配置Windows的环境变量Path，这是基本开发常识了，就不再讲解了
+
+第1种方式需要在每一个Qt程序中都拷贝一份FFmpeg的dll文件，第2~4种方式可以让多个Qt程序共用同一份FFmpeg的dll文件。
 
 ### .pro文件
 
