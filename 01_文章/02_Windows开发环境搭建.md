@@ -116,6 +116,40 @@ QtCreator默认会创建一个MainWindow类（主窗口）。
 ![](https://img2020.cnblogs.com/blog/497279/202103/497279-20210303100520847-1054974024.png)
 ![](https://img2020.cnblogs.com/blog/497279/202103/497279-20210303100522293-1578268250.png)
 
+### 消除警告
+
+每次运行Qt程序，你的控制台可能都会出现以下警告信息：**QT_DEVICE_PIXEL_RATIO**已经过期。
+
+
+```shell
+Warning: QT_DEVICE_PIXEL_RATIO is deprecated. Instead use:
+   QT_AUTO_SCREEN_SCALE_FACTOR to enable platform plugin controlled per-screen factors.
+   QT_SCREEN_SCALE_FACTORS to set per-screen DPI.
+   QT_SCALE_FACTOR to set the application global scale factor.
+```
+
+解决方案：设置环境变量**QT_SCALE_FACTOR**为1即可。
+
+```cpp
+#include "mainwindow.h"
+
+#include <QApplication>
+
+// 导入头文件
+#include <QByteArray>
+
+int main(int argc, char *argv[])
+{
+    // 通过qputenv函数设置QT_SCALE_FACTOR为1
+    qputenv("QT_SCALE_FACTOR", QByteArray("1"));
+
+    QApplication a(argc, argv);
+    MainWindow w;
+    w.show();
+    return a.exec();
+}
+```
+
 ### 集成FFmpeg到Qt项目中
 
 在Windows中，我们最终是通过调用FFmpeg动态库（dll）中的函数来操作音视频数据，使用dll需要用到3种文件：
@@ -167,6 +201,7 @@ LIBS += -L %FFMPEG_BUILD%/lib\
 #include "mainwindow.h"
 
 #include <QApplication>
+#include <QByteArray>
 
 // 为了使用qDebug函数
 #include <QDebug>
@@ -179,8 +214,11 @@ extern "C" {
 
 int main(int argc, char *argv[])
 {
+    qputenv("QT_SCALE_FACTOR", QByteArray("1"));
+    
     // 打印版本信息
     qDebug() << av_version_info();
+    
     QApplication a(argc, argv);
     MainWindow w;
     w.show();
@@ -201,3 +239,34 @@ int main(int argc, char *argv[])
 运行程序后，如果能在控制台看到**4.3.2**字样的输出信息，说明FFmpeg已经集成成功。
 
 ![](https://img2020.cnblogs.com/blog/497279/202103/497279-20210303100603623-1729439411.png)
+
+### .pro文件
+
+.pro文件是Qt项目的主配置文件。
+
+```shell
+# 包含了core、gui两个模块
+QT       += core gui
+
+# 高于4版本，就包含widgets模块
+greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
+
+# 源代码
+SOURCES += \
+    main.cpp \
+    mainwindow.cpp
+
+# 头文件
+HEADERS += \
+    mainwindow.h
+
+# ui文件
+FORMS += \
+    mainwindow.ui
+```
+
+### 常用快捷键
+- 字体缩放：Ctrl + 鼠标滚轮
+- 帮助文档：F1
+- 注释：Ctrl + /
+- 同名的.h、.cpp文件之间切换：F4
