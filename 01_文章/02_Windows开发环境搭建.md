@@ -152,19 +152,24 @@ int main(int argc, char *argv[])
 
 ### 集成FFmpeg到Qt项目中
 
-在Windows中，我们最终是通过调用FFmpeg动态库（dll）中的函数来操作音视频数据，使用dll需要用到3种文件：
+在Windows中，我们最终是通过调用FFmpeg动态库（dll）中的函数来操作音视频数据，使用dll的其中一种方式是需要用到3种文件：
 
-- **.h**：头文件
+- **.h**：头文件（Header File）
   - 包含了函数的声明
   - 通过*#include*去导入相应的头文件
-- **.dll**：动态库文件
+- **.dll**：动态链接库（Dynamic Link Library）
   - 包含了函数的具体实现代码
   - Windows程序会在运行过程中，动态调用dll中的函数
-- **.lib**或**.dll.a**：静态库文件
+- **.lib**或**.dll.a**：（动态链接库的）导入库（Import Library）
   - **.lib**：用于MSVC编译器中
   - **.dll.a**：用于MinGW编译器中
-  - 包含了dll中函数的入口和位置
-  - 最终需要链接到Windows程序中
+  - 包含了dll中函数的入口，用于辅助找到并调用dll中的函数
+  - 最终需要链接到Windows程序中（比如合并到exe文件中）
+
+值得一提的是，在Windows中，静态链接库（Static Link Library）的扩展名也是**.lib**、**.dll.a**。静态链接库和导入库的区别是：
+
+- 静态链接库：包含了函数的具体实现代码
+- 导入库：不包含函数的具体实现代码（函数的具体实现代码存储在dll中）
 
 #### 修改**.pro**文件
 
@@ -172,7 +177,7 @@ int main(int argc, char *argv[])
 # 设置头文件的目录，以便编译器能够找到头文件
 INCLUDEPATH += %FFMPEG_BUILD%/include
 
-# 设置静态库文件的目录和需要链接的静态库
+# 设置导入库的目录和需要链接的导入库
 LIBS += -L %FFMPEG_BUILD%/lib \
         -lavcodec \
         -lavdevice \
@@ -187,10 +192,10 @@ LIBS += -L %FFMPEG_BUILD%/lib \
 - \#号后面的内容是注释
 - **%FFMPEG_BUILD%**表示**ffmpeg-4.3.2-2021-02-27-full_build-shared.7z**解压后的目录
   - 需要根据你的实际情况修改为真实的路径
-- **-L**：设置静态库文件的目录，以便编译器能够找到静态库文件
+- **-L**：设置导入库的目录，以便编译器能够找到导入库
   - -L后面可以留或不留空格
-- **-l**：设置需要链接的静态库名称
-  - 静态库名称需要去掉文件名前面的lib，比如libavcodec.dll.a就写成avcodec
+- **-l**：设置需要链接的导入库名称
+  - 导入库名称需要去掉文件名前面的lib，比如libavcodec.dll.a就写成avcodec
   - -l后面不能留空格
 
 #### 调用函数

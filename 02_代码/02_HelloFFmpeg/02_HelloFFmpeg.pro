@@ -40,7 +40,7 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 INCLUDEPATH += ../include
 #INCLUDEPATH += F:/Dev/ffmpeg-4.3.2/include
 
-# 设置FFmpeg静态库的位置
+# 设置FFmpeg导入库的位置
 #LIBS += -L F:/Dev/ffmpeg-4.3.2/lib \
 LIBS += -L ../lib \
         -lavcodec \
