@@ -10,6 +10,26 @@
 
 为了让所有平台的开发者都能够学习到音视频开发的通用技术，本教程主要讲解跨平台的音视频开发库[FFmpeg](http://ffmpeg.org/)。其实只要你掌握了FFmpeg，也可以很快上手其他音视频开发库，因为底层原理都是一样的，你最终操作的都是一样的数据，比如MP3、MP4文件。
 
+### 简介
+
+![FFmpeg的Logo](https://img2020.cnblogs.com/blog/497279/202103/497279-20210312213545679-1171268432.png)
+
+FFmpeg的名字由FF和mpeg组成。
+
+- FF是**F**ast **F**orward（译为：快进、快速前进）的简称
+- mpeg来源于**M**oving **P**icture **E**xperts **G**roup（简称：MPEG，译为：动态影像专家小组）
+	- MPEG是源自ISO与IEC等国际组织的工作小组
+	- MPEG的其中一项工作是：制定音视频相关的标准（比如压缩标准）
+
+有很多知名项目都采用了FFmpeg，比如：
+
+- [Google Chrome](https://www.chromium.org/audio-video)：浏览器
+- Firefox：浏览器
+- [VLC](https://www.videolan.org)：跨平台播放器
+- [MPlayer](http://www.mplayerhq.hu)
+- [ijkplayer](https://github.com/bilibili/ijkplayer)：bilibili团队开发的Android/iOS播放器框架
+- Perian：Apple公司的QuickTime组件
+
 ### 下载
 
 网上已经有编译好的FFmpeg，目前最新的Release版本是4.3.2，可以直接下载到项目中进行开发使用。
@@ -138,8 +158,7 @@ Warning: QT_DEVICE_PIXEL_RATIO is deprecated. Instead use:
 // 导入头文件【也可以不导入，因为<QApplication>中已经包含了<QByteArray>】
 // #include <QByteArray>
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
     // 通过qputenv函数设置QT_SCALE_FACTOR为1
     qputenv("QT_SCALE_FACTOR", QByteArray("1"));
 
@@ -213,11 +232,10 @@ LIBS += -L %FFMPEG_BUILD%/lib \
 // FFmpeg是C语言库
 // 有了extern "C"，才能在C++中导入C语言函数
 extern "C" {
-    #include <libavcodec/avcodec.h>
+#include <libavcodec/avcodec.h>
 }
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
     // 打印版本信息
     qDebug() << av_version_info();
     

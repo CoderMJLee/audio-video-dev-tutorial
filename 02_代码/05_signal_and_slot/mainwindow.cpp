@@ -2,13 +2,11 @@
 #include <QPushButton>
 
 MainWindow::MainWindow(QWidget *parent)
-    : QMainWindow(parent)
-{
+    : QMainWindow(parent) {
     QPushButton *btn = new QPushButton;
     btn->setText("关闭");
     btn->setFixedSize(100, 30);
     btn->setParent(this);
-
     // 连接信号与槽
     // 点击按钮，关闭MainWindow窗口
     // btn发出信号
@@ -17,7 +15,6 @@ MainWindow::MainWindow(QWidget *parent)
             this, &MainWindow::close);
 }
 
-MainWindow::~MainWindow()
-{
+MainWindow::~MainWindow() {
 }
 

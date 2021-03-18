@@ -3,8 +3,7 @@
 
 #include <QObject>
 
-class Receiver : public QObject
-{
+class Receiver : public QObject {
     Q_OBJECT
 public:
     explicit Receiver(QObject *parent = nullptr);

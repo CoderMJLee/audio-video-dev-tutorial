@@ -1,6 +1,4 @@
 #include "sender.h"
 
-Sender::Sender(QObject *parent) : QObject(parent)
-{
-
+Sender::Sender(QObject *parent) : QObject(parent) {
 }

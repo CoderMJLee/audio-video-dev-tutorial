@@ -122,11 +122,10 @@ LIBS += -L /usr/local/Cellar/ffmpeg/4.3.2/lib \
 #include <QDebug>
 
 extern "C" {
-    #include <libavcodec/avcodec.h>
+#include <libavcodec/avcodec.h>
 }
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
     // 打印版本号
     qDebug() << av_version_info();
 

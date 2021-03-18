@@ -3,8 +3,7 @@
 
 #include <QPushButton>
 
-class MyPushButton : public QPushButton
-{
+class MyPushButton : public QPushButton {
     Q_OBJECT
     ~MyPushButton();
 

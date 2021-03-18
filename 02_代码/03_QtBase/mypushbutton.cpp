@@ -1,12 +1,9 @@
 #include "mypushbutton.h"
 #include <QDebug>
 
-MyPushButton::MyPushButton(QWidget *parent) : QPushButton(parent)
-{
-
+MyPushButton::MyPushButton(QWidget *parent) : QPushButton(parent) {
 }
 
-MyPushButton::~MyPushButton()
-{
+MyPushButton::~MyPushButton() {
     qDebug() << "MyPushButton::~MyPushButton()";
 }
