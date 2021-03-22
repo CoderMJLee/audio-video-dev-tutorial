@@ -194,10 +194,10 @@ int main(int argc, char *argv[]) {
 
 ```shell
 # 设置头文件的目录，以便编译器能够找到头文件
-INCLUDEPATH += %FFMPEG_BUILD%/include
+INCLUDEPATH += %FFMPEG_HOME%/include
 
 # 设置导入库的目录和需要链接的导入库
-LIBS += -L %FFMPEG_BUILD%/lib \
+LIBS += -L%FFMPEG_HOME%/lib \
         -lavcodec \
         -lavdevice \
         -lavfilter \
@@ -209,13 +209,11 @@ LIBS += -L %FFMPEG_BUILD%/lib \
 ```
 
 - \#号后面的内容是注释
-- **%FFMPEG_BUILD%**表示**ffmpeg-4.3.2-2021-02-27-full_build-shared.7z**解压后的目录
+- **%FFMPEG_HOME%**表示**ffmpeg-4.3.2-2021-02-27-full_build-shared.7z**解压后的目录
   - 需要根据你的实际情况修改为真实的路径
 - **-L**：设置导入库的目录，以便编译器能够找到导入库
-  - -L后面可以留或不留空格
 - **-l**：设置需要链接的导入库名称
   - 导入库名称需要去掉文件名前面的lib，比如libavcodec.dll.a就写成avcodec
-  - -l后面不能留空格
 
 #### 调用函数
 
@@ -252,7 +250,7 @@ Qt程序编译成功后，会生成一个exe文件
 - exe是Windows中的一种可执行文件
 - 我们编写的程序代码最终都存在了exe文件中
 
-为了保证exe在运行时能成功调用FFmpeg的函数，那么就得让exe能够找到FFmpeg的dll文件（动态库文件）。可以将**%FFMPEG_BUILD%/bin**目录中的所有dll文件拷贝到exe文件所在的目录中，exe在运行的时候，能自动找到跟它同一目录下的dll文件。
+为了保证exe在运行时能成功调用FFmpeg的函数，那么就得让exe能够找到FFmpeg的dll文件（动态库文件）。可以将**%FFMPEG_HOME%/bin**目录中的所有dll文件拷贝到exe文件所在的目录中，exe在运行的时候，能自动找到跟它同一目录下的dll文件。
 
 ![](https://img2020.cnblogs.com/blog/497279/202103/497279-20210303100542709-187646790.png)
 
@@ -275,7 +273,7 @@ exe在寻找dll文件时，大概按照以下优先级顺序去查找（这里�
 3. Windows目录
    - C:/Windows
 4. 环境变量Path中的路径
-    - 所以可以考虑将**%FFMPEG_BUILD%/bin**目录配置到Path变量中
+    - 所以可以考虑将**%FFMPEG_HOME%/bin**目录配置到Path变量中
     - 置于如何配置Windows的环境变量Path，这是基本开发常识了，就不再讲解了
 
 第1种方式需要在每一个Qt程序中都拷贝一份FFmpeg的dll文件，第2~4种方式可以让多个Qt程序共用同一份FFmpeg的dll文件。

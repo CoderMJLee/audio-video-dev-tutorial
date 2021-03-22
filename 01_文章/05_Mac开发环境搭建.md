@@ -101,7 +101,7 @@ Qt的路径是在**/usr/local**中，默认是隐藏的。
 INCLUDEPATH += /usr/local/Cellar/ffmpeg/4.3.2/include
 
 # 设置库文件路径
-LIBS += -L /usr/local/Cellar/ffmpeg/4.3.2/lib \
+LIBS += -L/usr/local/Cellar/ffmpeg/4.3.2/lib \
         -lavcodec \
         -lavdevice \
         -lavfilter \
