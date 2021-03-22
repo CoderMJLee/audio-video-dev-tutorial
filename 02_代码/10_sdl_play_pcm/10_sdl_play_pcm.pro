@@ -16,13 +16,13 @@ DEFINES += QT_DEPRECATED_WARNINGS
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
-    audiothread.cpp \
     main.cpp \
-    mainwindow.cpp
+    mainwindow.cpp \
+    playthread.cpp
 
 HEADERS += \
-    audiothread.h \
-    mainwindow.h
+    mainwindow.h \
+    playthread.h
 
 FORMS += \
     mainwindow.ui
@@ -33,16 +33,14 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
 
 win32 {
-    FFMPEG_HOME = ..
+    SDL_HOME = F:/Dev/SDL2-2.0.14/x86_64-w64-mingw32
 }
 
-macx {
-    FFMPEG_HOME = /usr/local/Cellar/ffmpeg/4.3.2
+mac {
+    SDL_HOME = /usr/local/Cellar/sdl2/2.0.14_1
 }
 
-INCLUDEPATH += $${FFMPEG_HOME}/include
+INCLUDEPATH += $${SDL_HOME}/include
 
-LIBS += -L $${FFMPEG_HOME}/lib \
-        -lavdevice \
-        -lavformat \
-        -lavutil
+LIBS += -L $${SDL_HOME}/lib \
+        -lSDL2

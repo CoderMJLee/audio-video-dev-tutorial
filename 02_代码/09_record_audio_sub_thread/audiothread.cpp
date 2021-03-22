@@ -2,6 +2,7 @@
 
 #include <QDebug>
 #include <QFile>
+#include <QDateTime>
 
 extern "C" {
 // 设备
@@ -18,11 +19,11 @@ extern "C" {
     // 设备名称
     #define DEVICE_NAME "audio=线路输入 (3- 魅声T800)"
     // PCM文件名
-    #define FILENAME "F:/out.pcm"
+    #define FILEPATH "F:/"
 #else
     #define FMT_NAME "avfoundation"
     #define DEVICE_NAME ":0"
-    #define FILENAME "/Users/mj/Desktop/out.pcm"
+    #define FILEPATH "/Users/mj/Desktop/"
 #endif
 
 AudioThread::AudioThread(QObject *parent) : QThread(parent) {
@@ -32,6 +33,8 @@ AudioThread::AudioThread(QObject *parent) : QThread(parent) {
 }
 
 AudioThread::~AudioThread() {
+    // 断开所有的连接
+    disconnect();
     // 内存回收之前，正常结束线程
     requestInterruption();
     // 安全退出
@@ -65,12 +68,16 @@ void AudioThread::run() {
     }
 
     // 文件名
-    QFile file(FILENAME);
+    QString filename = FILEPATH;
+
+    filename += QDateTime::currentDateTime().toString("MM_dd_HH_mm_ss");
+    filename += ".pcm";
+    QFile file(filename);
 
     // 打开文件
     // WriteOnly：只写模式。如果文件不存在，就创建文件；如果文件存在，就会清空文件内容
     if (!file.open(QFile::WriteOnly)) {
-        qDebug() << "文件打开失败" << FILENAME;
+        qDebug() << "文件打开失败" << filename;
 
         // 关闭设备
         avformat_close_input(&ctx);
@@ -79,10 +86,20 @@ void AudioThread::run() {
 
     // 数据包
     AVPacket pkt;
-    // 不断采集数据
-    while (!isInterruptionRequested() && av_read_frame(ctx, &pkt) == 0) {
-        // 将数据写入文件
-        file.write((const char *) pkt.data, pkt.size);
+    while (!isInterruptionRequested()) {
+        // 不断采集数据
+        ret = av_read_frame(ctx, &pkt);
+
+        if (ret == 0) { // 读取成功
+            // 将数据写入文件
+            file.write((const char *) pkt.data, pkt.size);
+        } else {
+            // if (ret == AVERROR(EAGAIN))
+            char errbuf[1024];
+            av_strerror(ret, errbuf, sizeof (errbuf));
+            qDebug() << "av_read_frame error" << errbuf << ret;
+            break;
+        }
     }
 //    while (!_stop && av_read_frame(ctx, &pkt) == 0) {
 //        // 将数据写入文件
