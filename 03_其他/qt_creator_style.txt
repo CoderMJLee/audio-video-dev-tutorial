@@ -1,0 +1,5 @@
+Windows位置：
+C:/Users/用户名/AppData/Roaming/QtProject/qtcreator/styles
+
+Mac位置：
+~/.config/QtProject/qtcreator/styles

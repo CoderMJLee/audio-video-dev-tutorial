@@ -109,7 +109,7 @@ SDL分成好多个子系统（subsystem）：
 - Timers：定时器
 - ...
 
-目前只需要通过[SDL_init](https://wiki.libsdl.org/SDL_Init)函数初始化Audio子系统即可。
+目前只用到了音频功能，所以只需要通过[SDL_init](https://wiki.libsdl.org/SDL_Init)函数初始化Audio子系统即可。
 
 ```cpp
 // 初始化Audio子系统
@@ -123,12 +123,123 @@ if (SDL_Init(SDL_INIT_AUDIO)) {
 ### 打开音频设备
 
 ```cpp
+// 一些宏定义
+#define SAMPLE_RATE 44100
+#define SAMPLE_SIZE 16
+#define CHANNELS 2
+#define SAMPLE_COUNT 1024
 
+// 用于存储读取的音频数据和长度
+typedef struct {
+    int len = 0;
+    Uint8 *data = nullptr;
+} AudioBuffer;
+
+// 音频参数
+SDL_AudioSpec spec;
+// 采样率
+spec.freq = SAMPLE_RATE;
+// 采样格式
+spec.format = AUDIO_S16LSB;
+// 声道数
+spec.channels = CHANNELS;
+// 音频缓冲区的样本数量
+spec.samples = SAMPLE_COUNT;
+// 回调函数（需要在回调函数中填充音频缓冲区）
+spec.callback = pull_audio_data;
+// 将来会传递到回调函数中
+AudioBuffer buffer;
+spec.userdata = &buffer;
+
+// 打开音频设备
+if (SDL_OpenAudio(&spec, nullptr)) {
+    qDebug() << "SDL_OpenAudio Error" << SDL_GetError();
+    // 清除所有初始化的子系统
+    SDL_Quit();
+    return;
+}
+```
+
+### 打开文件
+
+```cpp
+#define FILENAME "F:/in.pcm"
+
+// 打开文件
+QFile file(FILENAME);
+if (!file.open(QFile::ReadOnly)) {
+    qDebug() << "文件打开失败" << FILENAME;
+    // 关闭音频设备
+    SDL_CloseAudio();
+    // 清除所有初始化的子系统
+    SDL_Quit();
+    return;
+}
+```
+
+### 开始播放
+
+```cpp
+#define BUFFER_LEN ((SAMPLE_SIZE / 8 * CHANNELS) * SAMPLE_COUNT)
+
+// 开始播放
+SDL_PauseAudio(0);
+
+// 存放文件数据
+Uint8 data[BUFFER_LEN];
+
+while (!isInterruptionRequested()) {
+    // 如果还有数据没有填充完毕
+    if (buffer.len > 0) continue;
+
+    // 读取文件数据
+    buffer.len = file.read((char *) data, sizeof (data));
+    // 如果没有可读的文件数据了
+    if (buffer.len <= 0) {
+        // 暂停等待最后一次数据播放完毕
+        SDL_Delay(spec.samples * 1000 / SAMPLE_COUNT);
+        break;
+    }
+    buffer.data = data;
+}
+```
+
+### 回调函数
+
+```cpp
+// userdata：SDL_AudioSpec.userdata
+// stream：音频缓冲区（需要将音频数据填充到这个缓冲区）
+// len：音频缓冲区的大小（SDL_AudioSpec.samples * 每个样本的大小）
+void pull_audio_data(void *userdata, Uint8 *stream, int len) {
+    // 清空stream
+    SDL_memset(stream, 0, len);
+
+    // 取出缓冲信息
+    AudioBuffer *buffer = (AudioBuffer *) userdata;
+    if (buffer->len == 0) return;
+
+    // 取len、info->len的最小值（防止指针越界）
+    len = (len > buffer->len) ? buffer->len : len;
+
+    // 将buffer的数据填充到stream中
+    SDL_MixAudio(stream, buffer->data, len, SDL_MIX_MAXVOLUME);
+
+    // 根据已经填充的数据大小计算出：
+    // buffer下一次填充数据的位置
+    buffer->data += len;
+
+    // buffer剩余未填充数据的大小
+    buffer->len -= len;
+}
 ```
 
 ### 释放资源
 
 ```cpp
-// 清除所有初始化的子系统
+// 关闭文件
+file.close();
+// 关闭音频设备
+SDL_CloseAudio();
+// 清理所有初始化的子系统
 SDL_Quit();
 ```
