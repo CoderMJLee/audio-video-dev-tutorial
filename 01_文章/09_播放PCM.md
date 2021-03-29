@@ -123,15 +123,22 @@ if (SDL_Init(SDL_INIT_AUDIO)) {
 ### 打开音频设备
 
 ```cpp
-// 一些宏定义
+/* 一些宏定义 */
+// 采样率
 #define SAMPLE_RATE 44100
-#define SAMPLE_SIZE 16
+// 采样格式
+#define SAMPLE_FORMAT AUDIO_S16LSB
+// 采样大小
+#define SAMPLE_SIZE SDL_AUDIO_BITSIZE(SAMPLE_FORMAT)
+// 声道数
 #define CHANNELS 2
-#define SAMPLE_COUNT 1024
+// 音频缓冲区的样本数量
+#define SAMPLES 1024
 
 // 用于存储读取的音频数据和长度
 typedef struct {
     int len = 0;
+    int pullLen = 0;
     Uint8 *data = nullptr;
 } AudioBuffer;
 
@@ -139,15 +146,15 @@ typedef struct {
 SDL_AudioSpec spec;
 // 采样率
 spec.freq = SAMPLE_RATE;
-// 采样格式
-spec.format = AUDIO_S16LSB;
+// 采样格式（s16le）
+spec.format = SAMPLE_FORMAT;
 // 声道数
 spec.channels = CHANNELS;
-// 音频缓冲区的样本数量
-spec.samples = SAMPLE_COUNT;
-// 回调函数（需要在回调函数中填充音频缓冲区）
+// 音频缓冲区的样本数量（这个值必须是2的幂）
+spec.samples = SAMPLES;
+// 回调
 spec.callback = pull_audio_data;
-// 将来会传递到回调函数中
+// 传递给回调的参数
 AudioBuffer buffer;
 spec.userdata = &buffer;
 
@@ -180,7 +187,10 @@ if (!file.open(QFile::ReadOnly)) {
 ### 开始播放
 
 ```cpp
-#define BUFFER_LEN ((SAMPLE_SIZE / 8 * CHANNELS) * SAMPLE_COUNT)
+// 每个样本占用多少个字节
+#define BYTES_PER_SAMPLE ((SAMPLE_SIZE * CHANNELS) / 8)
+// 文件缓冲区的大小
+#define BUFFER_SIZE (SAMPLES * BYTES_PER_SAMPLE)
 
 // 开始播放
 SDL_PauseAudio(0);
@@ -189,17 +199,21 @@ SDL_PauseAudio(0);
 Uint8 data[BUFFER_LEN];
 
 while (!isInterruptionRequested()) {
-    // 如果还有数据没有填充完毕
+    // 只要从文件中读取的音频数据，还没有填充完毕，就跳过
     if (buffer.len > 0) continue;
 
-    // 读取文件数据
-    buffer.len = file.read((char *) data, sizeof (data));
-    // 如果没有可读的文件数据了
+    buffer.len = file.read((char *) data, BUFFER_SIZE);
+
+    // 文件数据已经读取完毕
     if (buffer.len <= 0) {
-        // 暂停等待最后一次数据播放完毕
-        SDL_Delay(spec.samples * 1000 / SAMPLE_COUNT);
+        // 剩余的样本数量
+        int samples = buffer.pullLen / BYTES_PER_SAMPLE;
+        int ms = samples * 1000 / SAMPLE_RATE;
+        SDL_Delay(ms);
         break;
     }
+
+    // 读取到了文件数据
     buffer.data = data;
 }
 ```
@@ -218,18 +232,16 @@ void pull_audio_data(void *userdata, Uint8 *stream, int len) {
     AudioBuffer *buffer = (AudioBuffer *) userdata;
     if (buffer->len == 0) return;
 
-    // 取len、info->len的最小值（防止指针越界）
-    len = (len > buffer->len) ? buffer->len : len;
-
-    // 将buffer的数据填充到stream中
-    SDL_MixAudio(stream, buffer->data, len, SDL_MIX_MAXVOLUME);
-
-    // 根据已经填充的数据大小计算出：
-    // buffer下一次填充数据的位置
-    buffer->data += len;
-
-    // buffer剩余未填充数据的大小
-    buffer->len -= len;
+    // 取len、bufferLen的最小值（为了保证数据安全，防止指针越界）
+    buffer->pullLen = (len > buffer->len) ? buffer->len : len;
+    
+    // 填充数据
+    SDL_MixAudio(stream,
+                 buffer->data,
+                 buffer->pullLen,
+                 SDL_MIX_MAXVOLUME);
+    buffer->data += buffer->pullLen;
+    buffer->len -= buffer->pullLen;
 }
 ```
 
