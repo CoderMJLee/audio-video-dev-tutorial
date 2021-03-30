@@ -1,4 +1,4 @@
-> 播放器是无法直接播放PCM的，因为播放器并不知道PCM的采样率、声道数、位深度等参数。当PCM转成某种特定的音频文件格式后（比如转成WAV），就能够被播放器识别播放了。
+播放器是无法直接播放PCM的，因为播放器并不知道PCM的采样率、声道数、位深度等参数。当PCM转成某种特定的音频文件格式后（比如转成WAV），就能够被播放器识别播放了。
 
 本文通过2种方式（命令行、编程）演示一下：如何将PCM转成WAV。
 
@@ -115,34 +115,72 @@ typedef struct {
 #include <QFile>
 #include <QDebug>
 
+// WAV文件头（44字节）
+typedef struct {
+    // RIFF chunk的id
+    uint8_t riffChunkId[4] = {'R', 'I', 'F', 'F'};
+    // RIFF chunk的data大小，即文件总长度减去8字节
+    uint32_t riffChunkDataSize;
+
+    // "WAVE"
+    uint8_t format[4] = {'W', 'A', 'V', 'E'};
+
+    /* fmt chunk */
+    // fmt chunk的id
+    uint8_t fmtChunkId[4] = {'f', 'm', 't', ' '};
+    // fmt chunk的data大小：存储PCM数据时，是16
+    uint32_t fmtChunkDataSize = 16;
+    // 音频编码，1表示PCM，3表示Floating Point
+    uint16_t audioFormat = 1;
+    // 声道数
+    uint16_t numChannels;
+    // 采样率
+    uint32_t sampleRate;
+    // 字节率 = sampleRate * blockAlign
+    uint32_t byteRate;
+    // 一个样本的字节数 = bitsPerSample * numChannels >> 3
+    uint16_t blockAlign;
+    // 位深度
+    uint16_t bitsPerSample;
+
+    /* data chunk */
+    // data chunk的id
+    uint8_t dataChunkId[4] = {'d', 'a', 't', 'a'};
+    // data chunk的data大小：音频数据的总长度，即文件总长度减去文件头的长度(一般是44)
+    uint32_t dataChunkDataSize;
+} WAVHeader;
+
 class FFmpegs {
-private:
-    FFmpegs();
 public:
-    static void pcm2wav(const QString &pcmFilename,
-                        const QString &wavFilename,
-                        WAVHeader &header);
+    FFmpegs();
+    static void pcm2wav(WAVHeader &header,
+                        const char *pcmFilename,
+                        const char *wavFilename);
 };
 
-void FFmpegs::pcm2wav(const QString &pcmFilename,
-                      const QString &wavFilename,
-                      WAVHeader &header) {
+void FFmpegs::pcm2wav(WAVHeader &header,
+                      const char *pcmFilename,
+                      const char *wavFilename) {
     // 打开pcm文件
     QFile pcmFile(pcmFilename);
-    if (!pcmFile.open(QIODevice::ReadOnly)) {
-        qDebug() << "pcm文件打开失败" << pcmFilename;
+    if (!pcmFile.open(QFile::ReadOnly)) {
+        qDebug() << "文件打开失败" << pcmFilename;
+        return;
     }
 
     // 打开wav文件
     QFile wavFile(wavFilename);
-    if (!wavFile.open(QIODevice::WriteOnly)) {
-        qDebug() << "wav文件打开失败" << wavFilename;
+    if (!wavFile.open(QFile::WriteOnly)) {
+        qDebug() << "文件打开失败" << wavFilename;
+
+        pcmFile.close();
+        return;
     }
 
-    // 写入header到wav文件
-    wavFile.write((const char *) &header, sizeof(WavHeader));
+    // 写入头部
+    wavFile.write((const char *) &header, sizeof (WAVHeader));
 
-    // 不断将pcmFile的数据写入到wavFile中
+    // 写入pcm数据
     char buf[1024];
     int size;
     while ((size = pcmFile.read(buf, sizeof (buf))) > 0) {
@@ -159,19 +197,19 @@ void FFmpegs::pcm2wav(const QString &pcmFilename,
 
 ```cpp
 // 文件名
-QString pcmFilename = "F:/in.pcm";
-QString wavFilename = "F:/out.wav";
+const char *pcmFilename = "F:/in.pcm";
+const char *wavFilename = "F:/out.wav";
 
 // 封装WAV的头部
 WAVHeader header;
 header.numChannels = CHANNELS;
 header.sampleRate = SAMPLE_RATE;
 header.bitsPerSample = SAMPLE_SIZE;
-header.blockAlign = CHANNELS * SAMPLE_SIZE / 8;
+header.blockAlign = CHANNELS * SAMPLE_SIZE >> 3;
 header.byteRate = SAMPLE_RATE * header.blockAlign;
 header.subchunk2Size = size;
 header.chunkSize = size + sizeof (WAVHeader) - 8;
 
 // 调用函数
-FFmpegs::pcm2wav(pcmFilename, wavFilename, header);
+FFmpegs::pcm2wav(header, pcmFilename, wavFilename);
 ```
