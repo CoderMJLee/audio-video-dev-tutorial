@@ -9,16 +9,13 @@ extern "C" {
 }
 
 int main(int argc, char *argv[]) {
-    WAVHeader header;
-    header.riffChunkDataSize = 1767996;
-    header.sampleRate = 44100;
-    header.bitsPerSample = 16;
-    header.numChannels = 2;
-    header.blockAlign = header.bitsPerSample * header.numChannels >> 3;
-    header.byteRate = header.sampleRate * header.blockAlign;
-    header.dataChunkDataSize = 1767960;
-    // pcm转wav文件
-    FFmpegs::pcm2wav(header, "F:/in.pcm", "F:/in.wav");
+//    WAVHeader header;
+//    header.sampleRate = 44100;
+//    header.bitsPerSample = 32;
+//    header.numChannels = 1;
+//    header.audioFormat = 3;
+//    // pcm转wav文件
+//    FFmpegs::pcm2wav(header, "F:/44100_f32le_1.pcm", "F:/44100_f32le_1.wav");
 
     // 注册设备
     avdevice_register_all();

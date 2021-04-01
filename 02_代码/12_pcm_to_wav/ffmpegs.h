@@ -1,7 +1,10 @@
 #ifndef FFMPEGS_H
 #define FFMPEGS_H
 
-#include <QObject>
+#include <stdint.h>
+
+#define AUDIO_FORMAT_PCM 1
+#define AUDIO_FORMAT_FLOAT 3
 
 // WAV文件头（44字节）
 typedef struct {
@@ -19,7 +22,7 @@ typedef struct {
     // fmt chunk的data大小：存储PCM数据时，是16
     uint32_t fmtChunkDataSize = 16;
     // 音频编码，1表示PCM，3表示Floating Point
-    uint16_t audioFormat = 1;
+    uint16_t audioFormat = AUDIO_FORMAT_PCM;
     // 声道数
     uint16_t numChannels;
     // 采样率

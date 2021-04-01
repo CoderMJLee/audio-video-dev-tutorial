@@ -132,9 +132,9 @@ void PlayThread::run() {
         // 文件数据已经读取完毕
         if (buffer.len <= 0) {
             // 剩余的样本数量
-//            int samples = buffer.pullLen / BYTES_PER_SAMPLE;
-//            int ms = samples * 1000 / SAMPLE_RATE;
-//            SDL_Delay(ms);
+            int samples = buffer.pullLen / BYTES_PER_SAMPLE;
+            int ms = samples * 1000 / SAMPLE_RATE;
+            SDL_Delay(ms);
             break;
         }
 

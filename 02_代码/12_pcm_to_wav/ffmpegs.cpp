@@ -9,12 +9,18 @@ FFmpegs::FFmpegs() {
 void FFmpegs::pcm2wav(WAVHeader &header,
                       const char *pcmFilename,
                       const char *wavFilename) {
+    header.blockAlign = header.bitsPerSample * header.numChannels >> 3;
+    header.byteRate = header.sampleRate * header.blockAlign;
+
     // 打开pcm文件
     QFile pcmFile(pcmFilename);
     if (!pcmFile.open(QFile::ReadOnly)) {
         qDebug() << "文件打开失败" << pcmFilename;
         return;
     }
+    header.dataChunkDataSize = pcmFile.size();
+    header.riffChunkDataSize = header.dataChunkDataSize
+                               + sizeof (WAVHeader) - 8;
 
     // 打开wav文件
     QFile wavFile(wavFilename);
