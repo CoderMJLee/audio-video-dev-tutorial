@@ -45,7 +45,7 @@ macx {
 
 INCLUDEPATH += $${FFMPEG_HOME}/include
 
-LIBS += -L $${FFMPEG_HOME}/lib \
+LIBS += -L$${FFMPEG_HOME}/lib \
         -lavdevice \
         -lavformat \
         -lavutil \
