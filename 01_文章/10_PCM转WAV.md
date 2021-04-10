@@ -60,60 +60,8 @@ ffmpeg -ar 44100 -ac 2 -f s16le -i out.pcm -bitexact out2.wav
 WAV的文件头结构大概如下所示：
 
 ```cpp
-typedef struct {
-    // RIFF chunk的id
-    char chunkId[4] = {'R', 'I', 'F', 'F'};
-    // RIFF chunk的data大小，即文件总长度减去8字节
-    uint32_t chunkSize;
-    // "WAVE"
-    char format[4] = {'W', 'A', 'V', 'E'};
-
-    /* fmt chunk */
-    // fmt chunk的id
-    char subchunk1Id[4] = {'f', 'm', 't', ' '};
-    // fmt chunk的data大小：存储PCM数据时，是16
-    uint32_t subchunk1Size = 16;
-    // 音频编码，1表示PCM，3表示Floating Point
-    uint16_t audioFormat = 1;
-    // 声道数
-    uint16_t numChannels;
-    // 采样率
-    uint32_t sampleRate;
-    // 字节率 = sampleRate * blockAlign
-    uint32_t byteRate;
-    // 一个样本的字节数 = bitsPerSample * numChannels / 8
-    uint16_t blockAlign;
-    // 位深度
-    uint16_t bitsPerSample;
-
-    /* data chunk */
-    // data chunk的id
-    char subchunk2Id[4] = {'d', 'a', 't', 'a'};
-    // data chunk的data大小：音频数据的总长度，即文件总长度减去文件头的长度
-    uint32_t subchunk2Size;
-} WAVHeader;
-```
-
-### 宏定义
-
-```cpp
-// 采样率
-#define SAMPLE_RATE 44100
-// 采样大小
-#define SAMPLE_SIZE 16
-// 声道数
-#define CHANNELS 2
-// 字节率
-#define BYTE_RATE (SAMPLE_RATE * SAMPLE_SIZE * CHANNELS / 8)
-```
-
-### PCM转WAV核心实现
-
-封装到了FFmpegs类的pcm2wav函数中。
-
-```cpp
-#include <QFile>
-#include <QDebug>
+#define AUDIO_FORMAT_PCM 1
+#define AUDIO_FORMAT_FLOAT 3
 
 // WAV文件头（44字节）
 typedef struct {
@@ -131,7 +79,7 @@ typedef struct {
     // fmt chunk的data大小：存储PCM数据时，是16
     uint32_t fmtChunkDataSize = 16;
     // 音频编码，1表示PCM，3表示Floating Point
-    uint16_t audioFormat = 1;
+    uint16_t audioFormat = AUDIO_FORMAT_PCM;
     // 声道数
     uint16_t numChannels;
     // 采样率
@@ -149,6 +97,15 @@ typedef struct {
     // data chunk的data大小：音频数据的总长度，即文件总长度减去文件头的长度(一般是44)
     uint32_t dataChunkDataSize;
 } WAVHeader;
+```
+
+### PCM转WAV核心实现
+
+封装到了FFmpegs类的pcm2wav函数中。
+
+```cpp
+#include <QFile>
+#include <QDebug>
 
 class FFmpegs {
 public:
@@ -161,12 +118,18 @@ public:
 void FFmpegs::pcm2wav(WAVHeader &header,
                       const char *pcmFilename,
                       const char *wavFilename) {
+    header.blockAlign = header.bitsPerSample * header.numChannels >> 3;
+    header.byteRate = header.sampleRate * header.blockAlign;
+
     // 打开pcm文件
     QFile pcmFile(pcmFilename);
     if (!pcmFile.open(QFile::ReadOnly)) {
         qDebug() << "文件打开失败" << pcmFilename;
         return;
     }
+    header.dataChunkDataSize = pcmFile.size();
+    header.riffChunkDataSize = header.dataChunkDataSize
+                               + sizeof (WAVHeader) - 8;
 
     // 打开wav文件
     QFile wavFile(wavFilename);
@@ -196,20 +159,12 @@ void FFmpegs::pcm2wav(WAVHeader &header,
 ### 调用函数
 
 ```cpp
-// 文件名
-const char *pcmFilename = "F:/in.pcm";
-const char *wavFilename = "F:/out.wav";
-
 // 封装WAV的头部
 WAVHeader header;
-header.numChannels = CHANNELS;
-header.sampleRate = SAMPLE_RATE;
-header.bitsPerSample = SAMPLE_SIZE;
-header.blockAlign = CHANNELS * SAMPLE_SIZE >> 3;
-header.byteRate = SAMPLE_RATE * header.blockAlign;
-header.subchunk2Size = size;
-header.chunkSize = size + sizeof (WAVHeader) - 8;
+header.numChannels = 2;
+header.sampleRate = 44100;
+header.bitsPerSample = 16;
 
 // 调用函数
-FFmpegs::pcm2wav(header, pcmFilename, wavFilename);
+FFmpegs::pcm2wav(header, "F:/in.pcm", "F:/out.wav");
 ```

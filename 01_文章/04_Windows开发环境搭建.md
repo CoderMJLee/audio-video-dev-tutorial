@@ -35,7 +35,7 @@ FFmpeg的名字由FF和mpeg组成。
 网上已经有编译好的FFmpeg，目前最新的Release版本是4.3.2，可以直接下载到项目中进行开发使用。
 
 - [Windows版本下载]( https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-github )：[ffmpeg-4.3.2-2021-02-27-full_build-shared.7z](https://github.com/GyanD/codexffmpeg/releases/download/4.3.2-2021-02-27/ffmpeg-4.3.2-2021-02-27-full_build-shared.7z)
-- 源码下载：[ffmpeg-4.3.2.tar.xz](http://ffmpeg.org/releases/ffmpeg-4.3.2.tar.xz)
+- 源码下载：[ffmpeg-4.3.2.tar.xz](https://ffmpeg.org/releases/ffmpeg-4.3.2.tar.xz)
 	- 网上编译好的FFmpeg一般是完整版，体积比较大
 	- 日后我们可以根据实际需要，对FFmpeg的源码进行裁剪后再进行重新编译 
 
