@@ -6,7 +6,7 @@ AAC被设计为MP3格式的后继产品，通常在相同的比特率下可以�
 
 AAC相较于MP3的改进包含：
 
-- 更多的采样率选择：8kHz~96kHz，MP3为16kHz~48kHz
+- 更多的采样率选择：8kHz ~ 96kHz，MP3为16kHz ~ 48kHz
 - 更高的声道数上限：48个，MP3在MPEG-1模式下为最多双声道，MPEG-2模式下[5.1声道](https://en.wikipedia.org/wiki/5.1_surround_sound)
 - 改进的压缩功能：以较小的文件大小提供更高的质量
 - 改进的解码效率：需要较少的处理能力进行解码
@@ -39,17 +39,19 @@ AAC是一个庞大家族，为了适应不同场合的需要，它有很多种�
 
 ### LC
 
-LC适合中等比特率，比如96kbps~192kbps之间。
+LC适合中等比特率，比如96kbps ~ 192kbps之间。
 
 **MPEG-4 AAC LC**等价于：
 
-- **MPEG-2 AAC LC** + **PNS**（Perceptual Noise Substitution，感知噪声替代）
+- **MPEG-2 AAC LC** + **PNS**
+
+PNS（[Perceptual Noise Substitution](https://wiki.hydrogenaud.io/index.php?title=Perceptual_Noise_Substitution)）译为：感知噪声替代。
 - PNS可以提高AAC的编码效率
 
 ### HE
 
 HE有v1和v2两个版本，适合低比特率：
-- v1：适合48kbps~64kbps
+- v1：适合48kbps ~ 64kbps
 - v2：适合低于32kbps，可在低至32kbps的比特率下提供接近CD品质的声音
 
 #### v1
@@ -92,7 +94,7 @@ SBR（[Spectral Band Replication](https://en.wikipedia.org/wiki/Spectral_band_re
 PS（[Parametric Stereo](https://en.wikipedia.org/wiki/Parametric_Stereo)）译为：参数立体声。
 
 - 是一种有损的音频压缩算法，可以进一步提高压缩率
-- 可以将左右声道信号组合成单声道信号，声道之间的差异信息存储到少量的PS data中（大概占2~3kbps）
+- 可以将左右声道信号组合成单声道信号，声道之间的差异信息存储到少量的PS data中（大概占2 ~ 3kbps）
 - 解码器可以根据PS data中恢复出立体声信号
 
 ## 编解码器
