@@ -53,7 +53,7 @@ ffmpeg -ar 44100 -ac 2 -f s16le -i out.pcm -bitexact out2.wav
 
 ## 编程
 
-在PCM数据的前面插入一个44字节的[WAV文件头](https://www.cnblogs.com/mjios/p/14512348.html#toc_title_28)，就可以将PCM转成WAV。
+在PCM数据的前面插入一个44字节的[WAV文件头](https://www.cnblogs.com/mjios/p/14466420.html#toc_title_28)，就可以将PCM转成WAV。
 
 ### WAV的文件头结构
 

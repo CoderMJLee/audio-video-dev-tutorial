@@ -84,7 +84,7 @@ Qt的路径是在**/usr/local**中，默认是隐藏的。
 ## 开发
 ### 新建项目
 
-新建项目的操作和[Windows版本](https://www.cnblogs.com/mjios/p/14466418.html#toc_title_8)差不多。
+新建项目的操作和[Windows版本](https://www.cnblogs.com/mjios/p/14465178.html#toc_title_8)差不多。
 
 ![选择开发环境](https://img2020.cnblogs.com/blog/497279/202103/497279-20210308091835299-2085632160.png)
 
@@ -94,7 +94,7 @@ Qt的路径是在**/usr/local**中，默认是隐藏的。
 
 ### 集成FFmpeg到Qt项目中
 
-集成FFmpeg的操作也和[Windows版本](https://www.cnblogs.com/mjios/p/14466418.html#toc_title_10)类似，修改**.pro**文件。
+集成FFmpeg的操作也和[Windows版本](https://www.cnblogs.com/mjios/p/14465178.html#toc_title_10)类似，修改**.pro**文件。
 
 ```sh
 # 设置头文件路径

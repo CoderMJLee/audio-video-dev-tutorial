@@ -84,7 +84,7 @@ LIBS += -L$${SDL_HOME}/lib \
         -lSDL2
 ```
 
-在Windows环境中，还需要处理一下dll文件，参考：[《dll文件处理》](https://www.cnblogs.com/mjios/p/14466418.html#toc_title_14)。
+在Windows环境中，还需要处理一下dll文件，参考：[《dll文件处理》](https://www.cnblogs.com/mjios/p/14465178.html#toc_title_14)。
 
 #### cpp代码
 
