@@ -62,7 +62,7 @@ HE有v1和v2两个版本，适合低比特率：
 - eAAC
 - AAC+
 - CT-aacPlus（Coding Technologies）
-    - Coding Technologies是瑞典是一家技术公司
+    - Coding Technologies是瑞典是一家技术公司，率先在AAC中使用了SBR技术
     - 在2007年，被杜比实验室（Dolby Laboratories）以2.5亿美元收购
 
 **MPEG-4 AAC HE v1**等价于：
@@ -111,22 +111,28 @@ PS（[Parametric Stereo](https://en.wikipedia.org/wiki/Parametric_Stereo)）译�
 - FFmpeg AAC
   - 支持LC规格
   - FFmpeg官方内置的AAC编解码器，在libavcodec库中
+    - 编解码器名字叫做aac
+    - 在开发过程中通过这个名字找到编解码器
 
 - [FAAC（Freeware Advanced Audio Coder）](https://en.wikipedia.org/wiki/FAAC)
   - 支持LC规格
-  - 可以内置到FFmpeg中，名字叫做libfaac
+  - 可以集成到FFmpeg的libavcodec中
+    - 编解码器名字叫做libfaac
+    - 在开发过程中通过这个名字找到编解码器，最后调用FAAC库的功能
   - 从2016年开始，FFmpeg已经[移除](https://ffmpeg.org/pipermail/ffmpeg-devel/2016-August/197790.html)了对FAAC的支持
   
 - [Fraunhofer FDK AAC](https://en.wikipedia.org/wiki/Fraunhofer_FDK_AAC)
   - 支持LC/HE规格
   - [**目前质量最高**](https://trac.ffmpeg.org/wiki/Encode/AAC)的AAC编解码器
-  - 可以内置到FFmpeg中，名字叫做libfdk_aac
+  - 可以集成到FFmpeg的libavcodec中
+    - 编解码器名字叫做libfdk_aac
+    - 在开发过程中通过这个名字找到编解码器，最后调用FDK AAC库的功能
 
 编码质量排名：Fraunhofer FDK AAC > FFmpeg AAC > FAAC。
 
 ## FDK AAC
 
-在网上下载的编译版FFmpeg，通常都是没有内置libfdk_aac的。可以通过命令行查看FFmpeg目前内置的AAC编解码器。
+在网上下载的编译版FFmpeg，通常都是没有集成libfdk_aac的。可以通过命令行查看FFmpeg目前集成的AAC编解码器。
 
 ```sh
 # windows
@@ -143,13 +149,9 @@ DEAIL. aac                  AAC (Advanced Audio Coding) (decoders: aac aac_fixed
 D.AIL. aac_latm             AAC LATM (Advanced Audio Coding LATM syntax)
 ```
 
-很显然，并没有包含libfdk_aac。这里给出2个解决方案：
+很显然，并没有包含libfdk_aac。
 
-- 下载内置了libfdk_aac的FFmpeg
-  - 这个版本不一定能找到
-  - 因为网上流传的FFmpeg基本都是不带libfdk_aac的，除非有某位热心的网友刚好上传了这个版本
-- 自己[手动编译FFmpeg源码](https://trac.ffmpeg.org/wiki/CompilationGuide)，将libfdk_aac内置到FFmpeg中
-  - 这是推荐的方案
-  - 自己手动编译的话，想内置啥就内置啥
-    - 可以把你想要的东西都塞到FFmpeg中，不想要的就删掉
-    - 也就是根据自己的需要对FFmpeg进行裁剪
+这里给出1个比较推荐的方案：自己[手动编译FFmpeg源码](https://trac.ffmpeg.org/wiki/CompilationGuide)，将libfdk_aac集成到FFmpeg中。
+- 自己手动编译的话，想集成啥就集成啥
+- 可以把你想要的东西都塞到FFmpeg中，不想要的就删掉
+- 也就是根据自己的需要对FFmpeg进行裁剪

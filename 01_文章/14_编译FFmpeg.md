@@ -6,7 +6,7 @@
 
 - 编译出**ffmpeg**、**ffprobe**、**ffplay**三个命令行工具
 - 只产生动态库，不产生静态库
-- 将**fdk-aac**、**x264**、**x265**内置到FFmpeg中
+- 将**fdk-aac**、**x264**、**x265**集成到FFmpeg中
   - x264、x265会在以后讲解的视频模块中用到
 
 ## 准备工作
@@ -51,7 +51,7 @@
 cd ~/Downloads/ffmpeg-4.3.2
 ```
 
-然后执行源码目录下的*configure*程序，它会在当前目录下生成一个Makefile文件。
+然后执行源码目录下的*configure*脚本，设置一些编译参数，做一些编译前的准备工作。
 
 ```sh
 ./configure --prefix=/usr/local/ffmpeg --enable-shared --disable-static --enable-gpl  --enable-nonfree --enable-libfdk-aac --enable-libx264 --enable-libx265
@@ -93,17 +93,18 @@ cd ~/Downloads/ffmpeg-4.3.2
 
 ### 编译
 
-对于经常在类Unix系统下接触C/C++开发的小伙伴来说，Makefile必然是不陌生的。这里给不了解Makefile的小伙伴简单科普一下：
-- Makefile描述了整个项目的编译和链接等规则
-  - 比如哪些文件需要编译？哪些文件不需要编译？哪些文件需要先编译？哪些文件需要后编译？等等
-- Makefile可以使项目的编译变得自动化，不需要每次都手动输入一堆源文件和参数
-	- 比如原来需要这么写：*gcc test1.c test2.c test3.c -o test* 
-
-接下来开始解析Makefile文件，进行编译。*-j8*表示允许同时执行8个编译任务。
+接下来开始解析源代码目录中的Makefile文件，进行编译。*-j8*表示允许同时执行8个编译任务。
 
 ```sh
 make -j8
 ```
+
+对于经常在类Unix系统下接触C/C++开发的小伙伴来说，Makefile必然是不陌生的。这里给不了解Makefile的小伙伴简单科普一下：
+
+- Makefile描述了整个项目的编译和链接等规则
+  - 比如哪些文件需要编译？哪些文件不需要编译？哪些文件需要先编译？哪些文件需要后编译？等等
+- Makefile可以使项目的编译变得自动化，不需要每次都手动输入一堆源文件和参数
+  - 比如原来需要这么写：*gcc test1.c test2.c test3.c -o test* 
 
 ### 安装
 
@@ -158,4 +159,3 @@ libpostproc    55.  7.100 / 55.  7.100
 此时，你完全可以通过*brew uninstall ffmpeg*卸载以前安装的FFmpeg。
 
 ## Windows编译
-
