@@ -103,14 +103,18 @@ void AudioThread::run() {
     }
 
     // 数据包
-    AVPacket pkt;
+//    AVPacket pkt;
+    AVPacket *pkt = av_packet_alloc();
     while (!isInterruptionRequested()) {
         // 不断采集数据
-        ret = av_read_frame(ctx, &pkt);
+//        ret = av_read_frame(ctx, &pkt);
+        ret = av_read_frame(ctx, pkt);
 
         if (ret == 0) { // 读取成功
             // 将数据写入文件
-            file.write((const char *) pkt.data, pkt.size);
+//            file.write((const char *) pkt.data, pkt.size);
+
+            file.write((const char *) pkt->data, pkt->size);
         } else if (ret == AVERROR(EAGAIN)) { // 资源临时不可用
             continue;
         } else { // 其他错误
@@ -119,6 +123,10 @@ void AudioThread::run() {
             qDebug() << "av_read_frame error" << errbuf << ret;
             break;
         }
+
+        // 必须要加，释放pkt内部的资源
+//        av_packet_unref(&pkt);
+        av_packet_unref(pkt);
     }
 //    while (!_stop && av_read_frame(ctx, &pkt) == 0) {
 //        // 将数据写入文件
@@ -128,6 +136,9 @@ void AudioThread::run() {
     // 释放资源
     // 关闭文件
     file.close();
+
+    // 释放资源
+    av_packet_free(&pkt);
 
     // 关闭设备
     avformat_close_input(&ctx);
