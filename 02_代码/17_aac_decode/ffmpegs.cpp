@@ -43,6 +43,10 @@ static int decode(AVCodecContext *ctx,
             return ret;
         }
 
+//        for (int i = 0; i < frame->channels; i++) {
+//            frame->data[i];
+//        }
+
         // 将解码后的数据写入文件
         outFile.write((char *) frame->data[0], frame->linesize[0]);
     }
@@ -80,7 +84,7 @@ void FFmpegs::aacDecode(const char *inFilename,
     AVFrame *frame = nullptr;
 
     // 获取解码器
-    codec = avcodec_find_decoder_by_name("aac");
+    codec = avcodec_find_decoder_by_name("libfdk_aac");
     if (!codec) {
         qDebug() << "decoder not found";
         return;
@@ -136,10 +140,19 @@ void FFmpegs::aacDecode(const char *inFilename,
     inLen = inFile.read(inData, IN_DATA_SIZE);
     while (inLen > 0) {
         // 经过解析器解析
+        // 内部调用的核心逻辑是：ff_aac_ac3_parse
         ret = av_parser_parse2(parserCtx, ctx,
                                &pkt->data, &pkt->size,
                                (uint8_t *) inData, inLen,
                                AV_NOPTS_VALUE, AV_NOPTS_VALUE, 0);
+
+        /*
+         pkt->data = inData;
+         pkt->size = inLen;
+         */
+//        qDebug() << pkt->data << (uint8_t *) inData;
+//        qDebug() << pkt->size << inLen;
+
         if (ret < 0) {
             ERROR_BUF(ret);
             qDebug() << "av_parser_parse2 error" << errbuf;
@@ -151,8 +164,8 @@ void FFmpegs::aacDecode(const char *inFilename,
         // 减去已经解析过的数据大小
         inLen -= ret;
 
-        if (pkt->size <= 0) continue;
-        if (decode(ctx, pkt, frame, outFile) < 0) {
+        // 解码
+        if (pkt->size > 0 && decode(ctx, pkt, frame, outFile) < 0) {
             goto end;
         }
 
@@ -176,8 +189,9 @@ void FFmpegs::aacDecode(const char *inFilename,
     }
 
     // 刷新缓冲区
-    //    pkt->data = NULL;
-    //    pkt->size = 0;
+//    pkt->data = NULL;
+//    pkt->size = 0;
+//    decode(ctx, pkt, frame, outFile);
     decode(ctx, nullptr, frame, outFile);
 
     // 赋值输出参数
