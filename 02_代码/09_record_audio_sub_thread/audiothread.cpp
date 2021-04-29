@@ -11,6 +11,7 @@ extern "C" {
 #include <libavformat/avformat.h>
 // 工具（比如错误处理）
 #include <libavutil/avutil.h>
+#include <libavcodec/avcodec.h>
 }
 
 #ifdef Q_OS_WIN

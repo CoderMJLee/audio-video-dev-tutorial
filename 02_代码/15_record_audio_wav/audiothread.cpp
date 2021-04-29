@@ -12,6 +12,7 @@ extern "C" {
 #include <libavformat/avformat.h>
 // 工具（比如错误处理）
 #include <libavutil/avutil.h>
+#include <libavcodec/avcodec.h>
 }
 
 #ifdef Q_OS_WIN
@@ -106,19 +107,22 @@ void AudioThread::run() {
     file.write((char *) &header, sizeof (WAVHeader));
 
     // 数据包
-    AVPacket pkt;
+    AVPacket *pkt = av_packet_alloc();
     while (!isInterruptionRequested()) {
         // 不断采集数据
-        ret = av_read_frame(ctx, &pkt);
+        ret = av_read_frame(ctx, pkt);
 
         if (ret == 0) { // 读取成功
             // 将数据写入文件
-            file.write((const char *) pkt.data, pkt.size);
+            file.write((const char *) pkt->data, pkt->size);
 
             // 计算录音时长
-            header.dataChunkDataSize += pkt.size;
+            header.dataChunkDataSize += pkt->size;
             unsigned long long ms = 1000.0 * header.dataChunkDataSize / header.byteRate;
             emit timeChanged(ms);
+
+            // 释放资源
+            av_packet_unref(pkt);
         } else if (ret == AVERROR(EAGAIN)) { // 资源临时不可用
             continue;
         } else { // 其他错误
@@ -146,6 +150,8 @@ void AudioThread::run() {
     file.write((char *) &header.riffChunkDataSize, sizeof (header.riffChunkDataSize));
 
     // 释放资源
+    av_packet_free(&pkt);
+
     // 关闭文件
     file.close();
 
