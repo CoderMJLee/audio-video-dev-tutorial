@@ -9,7 +9,13 @@
 - 将**fdk-aac**、**x264**、**x265**集成到FFmpeg中
   - x264、x265会在以后讲解的视频模块中用到
 
-## 准备工作
+## 下载源码
+
+下载源码[ffmpeg-4.3.2.tar.xz](https://ffmpeg.org/releases/ffmpeg-4.3.2.tar.xz)，然后解压。
+
+![FFmpeg源码结构](https://img2020.cnblogs.com/blog/497279/202104/497279-20210410211902005-744008601.png)
+
+## Mac编译
 
 ### 依赖项
 
@@ -33,14 +39,6 @@
 	- *brew list | grep x26*
 	- *brew list | grep -E 'fdk|x26'*
 - 如果已经安装过，可以不用再执行*brew install*
-
-### 下载源码
-
-下载源码[ffmpeg-4.3.2.tar.xz](https://ffmpeg.org/releases/ffmpeg-4.3.2.tar.xz)，然后解压。
-
-![FFmpeg源码结构](https://img2020.cnblogs.com/blog/497279/202104/497279-20210410211902005-744008601.png)
-
-## Mac编译
 
 ### configure
 
@@ -127,7 +125,7 @@ make install
 vim ~/.zprofile
 
 # .zprofile文件中写入以下内容
-export PATH=$PATH:/usr/local/ffmpeg/bin
+export PATH=/usr/local/ffmpeg/bin:$PATH
 
 # 让.zprofile生效
 source ~/.zprofile
@@ -159,3 +157,105 @@ libpostproc    55.  7.100 / 55.  7.100
 此时，你完全可以通过*brew uninstall ffmpeg*卸载以前安装的FFmpeg。
 
 ## Windows编译
+
+**configure**、**Makefile**这一套工具是用在类Unix系统上的（Linux、Mac等），默认无法直接用在Windows上。
+
+这里介绍其中一种[可行的解决方案](https://trac.ffmpeg.org/wiki/CompilationGuide/MinGW)：
+- 使用[MSYS2](https://www.msys2.org/)软件在Windows上模拟出Linux环境
+- 结合使用MinGW对FFmpeg进行编译
+
+### 下载安装MSYS2
+
+进入[MSYS2官网](https://www.msys2.org/)下载安装包（我这边下载的是：[msys2-x86_64-20210228.exe](https://repo.msys2.org/distrib/x86_64/msys2-x86_64-20210228.exe)），然后进行安装。
+
+安装完毕后打开命令行工具**mingw64.exe**。
+
+![mingw64.exe](https://img2020.cnblogs.com/blog/497279/202104/497279-20210416170808700-281534809.png)
+
+### 安装依赖
+
+pacman（Package Manager）是一个包管理工具。
+
+- *pacman -Sl*：搜索有哪些包可以安装
+- *pacman -S*：安装
+- *pacman -R*：卸载
+
+```sh
+# 查看是否有fdk、SDL2相关包（E表示跟一个正则表达式，i表示不区分大小写）
+pacman -Sl | grep -Ei 'fdk|sdl2'
+
+# 结果如下所示
+mingw32 mingw-w64-i686-SDL2 2.0.14-2
+mingw32 mingw-w64-i686-SDL2_gfx 1.0.4-1
+mingw32 mingw-w64-i686-SDL2_image 2.0.5-1
+mingw32 mingw-w64-i686-SDL2_mixer 2.0.4-2
+mingw32 mingw-w64-i686-SDL2_net 2.0.1-1
+mingw32 mingw-w64-i686-SDL2_ttf 2.0.15-1
+mingw32 mingw-w64-i686-fdk-aac 2.0.1-1
+mingw64 mingw-w64-x86_64-SDL2 2.0.14-2
+mingw64 mingw-w64-x86_64-SDL2_gfx 1.0.4-1
+mingw64 mingw-w64-x86_64-SDL2_image 2.0.5-1
+mingw64 mingw-w64-x86_64-SDL2_mixer 2.0.4-2
+mingw64 mingw-w64-x86_64-SDL2_net 2.0.1-1
+mingw64 mingw-w64-x86_64-SDL2_ttf 2.0.15-1
+mingw64 mingw-w64-x86_64-fdk-aac 2.0.1-1
+```
+
+接下来，安装各种依赖包。
+
+```sh
+# 编译工具链
+pacman -S mingw-w64-x86_64-toolchain
+
+pacman -S mingw-w64-x86_64-yasm
+
+pacman -S mingw-w64-x86_64-SDL2
+
+pacman -S mingw-w64-x86_64-fdk-aac
+
+pacman -S mingw-w64-x86_64-x264
+
+pacman -S mingw-w64-x86_64-x265
+
+# 需要单独安装make
+pacman -S make
+```
+
+关于软件包相关的默认路径：
+- 下载目录：**%MSYS2_HOME%/var/cache/pacman/pkg**
+- 安装目录：**%MSYS2_HOME%/mingw64**
+- **%MSYS2_HOME%**是指MSYS2的安装目录
+
+### configure
+
+我的源码是放在**F:/Dev/ffmpeg-4.3.1**，输入*cd /f/dev/ffmpeg-4.3.1*即可进入源码目录。然后执行**configure**。
+
+```sh
+./configure --prefix=/usr/local/ffmpeg --enable-shared --disable-static --enable-gpl  --enable-nonfree --enable-libfdk-aac --enable-libx264 --enable-libx265
+```
+
+### 编译、安装
+
+```sh
+make -j8 && make install
+```
+
+FFmpeg最终会被安装到**%MSYS2_HOME%/usr/local/ffmpeg**目录中。
+
+![FFmpeg的安装目录](https://img2020.cnblogs.com/blog/497279/202104/497279-20210417101940164-2143679821.png)
+
+### bin
+
+此时bin目录中的ffmpeg、ffprobe、ffplay还是没法使用的，因为缺少相关的**dll**，需要从**%MSYS2_HOME%/mingw64/bin**中拷贝，或者将**%MSYS2_HOME%/mingw64/bin**配置到环境变量Path中。
+
+需要拷贝的dll有：**libwinpthread-1**、**SDL2**、**zlib1.dll**、**liblzma-5**、**libbz2-1**、**libiconv-2**、**libgcc_s_seh-1**、**libstdc++-6**、**libx265**、**libx264-159**、**libfdk-aac-2**。
+
+![FFmpeg的bin目录](https://img2020.cnblogs.com/blog/497279/202104/497279-20210419191615801-1704788279.png)
+
+### Path
+
+最后建议将**%FFMPEG_HOME%/bin**目录配置到环境变量Path中。
+
+在命令行输入*ffmpeg -version*，一切大功告成！
+
+![查看版本](https://img2020.cnblogs.com/blog/497279/202104/497279-20210417102933478-118610548.png)

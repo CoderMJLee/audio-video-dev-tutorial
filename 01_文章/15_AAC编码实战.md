@@ -133,7 +133,7 @@ extern "C" {
 
 ### 函数声明
 
-我们最终会将AAC编码的操作封装到一个函数中。
+我们最终会将PCM转AAC的操作封装到一个函数中。
 
 ```cpp
 extern "C" {
@@ -410,4 +410,16 @@ end:
     av_frame_free(&frame);
     av_packet_free(&pkt);
     avcodec_free_context(&ctx);
+```
+
+### 函数调用
+
+```cpp
+AudioEncodeSpec in;
+in.filename = "F:/in.pcm";
+in.sampleRate = 44100;
+in.sampleFmt = AV_SAMPLE_FMT_S16;
+in.chLayout = AV_CH_LAYOUT_STEREO;
+
+FFmpegs::aacEncode(in, "F:/out.aac");
 ```
