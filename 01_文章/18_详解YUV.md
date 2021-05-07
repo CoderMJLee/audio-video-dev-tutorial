@@ -409,6 +409,8 @@ ffmpeg -s 512x512 -pix_fmt yuv420p -i in.yuv out.jpg
 
 ## 显示YUV
 
+### 完整的YUV
+
 可以通过*ffplay*显示YUV数据。
 
 - YUV中直接存储的是所有像素的颜色信息（可以理解为是图像的一种原始数据）
@@ -417,10 +419,38 @@ ffmpeg -s 512x512 -pix_fmt yuv420p -i in.yuv out.jpg
 - 这就类似于：播放pcm时，必须得设置采样率（*-ar*）、声道数（*-ac*）、采样格式（*-f*）
 
 ```shell
-ffplay -s 512x512 -pix_fmt yuv420p out.yuv
+ffplay -s 512x512 -pix_fmt yuv420p in.yuv
 
 # 在ffplay中
 # -s已经过期，建议改为：-video_size
 # -pix_fmt已经过期，建议改为：-pixel_format
-ffplay -video_size 512x512 -pixel_format yuv420p out.yuv
+ffplay -video_size 512x512 -pixel_format yuv420p in.yuv
 ```
+
+### 单个分量
+
+可以使用过滤器（filter）显示其中的单个分量（r、g、b、y、u、v）。
+
+```sh
+# 只显示r分量
+ffplay -vf extractplanes=r in.png
+
+# 只显示g分量
+ffplay -vf extractplanes=g in.png
+
+# 只显示b分量
+ffplay -vf extractplanes=b in.png
+
+# 只显示y分量
+ffplay -video_size 512x512 -pixel_format yuv420p -vf extractplanes=y in.yuv
+# 只显示y分量
+ffplay -video_size 512x512 -pixel_format yuv420p -vf extractplanes=u in.yuv
+# 只显示y分量
+ffplay -video_size 512x512 -pixel_format yuv420p -vf extractplanes=v in.yuv
+```
+
+- *-vf*
+  - 设置视频过滤器
+  - 等价写法：*-filter:v*
+- [extractplanes](https://ffmpeg.org/ffmpeg-filters.html#extractplanes)
+  - 抽取单个分量的内容到灰度视频流中

@@ -50,6 +50,8 @@ buffer.data = data;
 spec.userdata = &buffer;
 ```
 
+如果想要轻松加载MP3、Ogg、FLAC等格式的音频文件，可以使用第三方库：[SDL_mixer](https://www.libsdl.org/projects/SDL_mixer/)。
+
 ## 打开音频设备
 
 ```cpp
