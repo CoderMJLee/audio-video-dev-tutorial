@@ -443,9 +443,9 @@ ffplay -vf extractplanes=b in.png
 
 # 只显示y分量
 ffplay -video_size 512x512 -pixel_format yuv420p -vf extractplanes=y in.yuv
-# 只显示y分量
+# 只显示u分量
 ffplay -video_size 512x512 -pixel_format yuv420p -vf extractplanes=u in.yuv
-# 只显示y分量
+# 只显示v分量
 ffplay -video_size 512x512 -pixel_format yuv420p -vf extractplanes=v in.yuv
 ```
 
