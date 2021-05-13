@@ -2,7 +2,6 @@
 #define YUVPLAYER_H
 
 #include <QWidget>
-#include <SDL2/SDL.h>
 #include <QFile>
 
 extern "C" {
@@ -42,16 +41,17 @@ public:
 signals:
 
 private:
-    SDL_Window *_window = nullptr;
-    SDL_Renderer *_renderer = nullptr;
-    SDL_Texture *_texture = nullptr;
     QFile _file;
     int _timerId = 0;
     State _state = Stopped;
     Yuv _yuv;
     bool _playing;
+    QImage *_currentImage = nullptr;
+
+    void freeCurrentImage();
 
     void timerEvent(QTimerEvent *event);
+    void paintEvent(QPaintEvent *event);
 };
 
 #endif // YUVPLAYER_H
