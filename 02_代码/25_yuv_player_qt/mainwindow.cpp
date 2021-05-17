@@ -9,8 +9,8 @@ MainWindow::MainWindow(QWidget *parent)
 
     // 创建播放器
     _player = new YuvPlayer(this);
-    int w = 400;
-    int h = 400;
+    int w = 700;
+    int h = 700;
     int x = (width() - w) >> 1;
     int y = (height() - h) >> 1;
     _player->setGeometry(x, y, w, h);

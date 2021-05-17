@@ -47,6 +47,7 @@ private:
     Yuv _yuv;
     bool _playing;
     QImage *_currentImage = nullptr;
+    QRect _dstRect;
 
     void freeCurrentImage();
 

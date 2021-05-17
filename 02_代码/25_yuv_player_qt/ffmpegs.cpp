@@ -82,16 +82,18 @@ end:
 //    inData[1] = inData[0] + 所有Y的大小;
 //    inData[2] = inData[0] + 所有Y的大小 + 所有U的大小;
 
-//    inStrides[0] = in.width * in.height * 1;
-//    inStrides[1] = inStrides[0] >> 2;
-//    inStrides[2] = inStrides[1];
+//    inStrides[0] = 640; // Y
+//    inStrides[1] = 320; // U
+//    inStrides[2] = 320; // V
 void FFmpegs::convertRawVideo(RawVideoFile &in,
                               RawVideoFile &out) {
+    // yuv420p -> yuv444p
+
     // 上下文
     SwsContext *ctx = nullptr;
     // 输入、输出缓冲区（指向每一个平面的数据）
     uint8_t *inData[4], *outData[4];
-    // 每一个平面的大小
+    // 每一个平面一行的大小
     int inStrides[4], outStrides[4];
     // 每一帧图片的大小
     int inFrameSize, outFrameSize;
