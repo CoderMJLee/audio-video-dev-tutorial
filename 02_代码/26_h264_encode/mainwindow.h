@@ -2,7 +2,8 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
-#include "yuvplayer.h"
+
+#include <audiothread.h>
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -18,15 +19,10 @@ public:
     ~MainWindow();
 
 private slots:
-    void on_playButton_clicked();
-    void on_stopButton_clicked();
-    void onPlayerStateChanged();
-
-    void on_nextButton_clicked();
+    void on_audioButton_clicked();
 
 private:
     Ui::MainWindow *ui;
-
-    YuvPlayer *_player = nullptr;
+    AudioThread *_audioThread = nullptr;
 };
 #endif // MAINWINDOW_H

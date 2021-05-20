@@ -16,31 +16,66 @@ YuvPlayer::YuvPlayer(QWidget *parent) : QWidget(parent) {
 }
 
 YuvPlayer::~YuvPlayer() {
-    _file.close();
+    closeFile();
     freeCurrentImage();
+    stopTimer();
 }
 
 void YuvPlayer::play() {
-    _timerId = startTimer(1000 / _yuv.fps);
-    _state = YuvPlayer::Playing;
+    if (_state == YuvPlayer::Playing) return;
+
+    // 状态可能是：暂停、停止、正常完毕
+
+    _timerId = startTimer(_interval);
+
+    setState(YuvPlayer::Playing);
 }
 
 void YuvPlayer::pause() {
-    if (_timerId) {
-        killTimer(_timerId);
-    }
-    _state = YuvPlayer::Paused;
+    if (_state != YuvPlayer::Playing) return;
+
+    // 状态可能是：正在播放
+
+    // 停止定时器
+    stopTimer();
+
+    // 改变状态
+    setState(YuvPlayer::Paused);
 }
 
 void YuvPlayer::stop() {
-    if (_timerId) {
-        killTimer(_timerId);
-    }
-    _state = YuvPlayer::Stopped;
+    if (_state == YuvPlayer::Stopped) return;
+
+    // 状态可能是：正在播放、暂停、正常完毕
+
+    // 停止定时器
+    stopTimer();
+
+    // 释放图片
+    freeCurrentImage();
+
+    // 刷新
+    update();
+
+    // 改变状态
+    setState(YuvPlayer::Stopped);
 }
 
 bool YuvPlayer::isPlaying() {
     return _state == YuvPlayer::Playing;
+}
+
+void YuvPlayer::setState(State state) {
+    if (state == _state) return;
+
+    if (state == YuvPlayer::Stopped
+            || state == YuvPlayer::Finished) {
+        // 让文件读取指针回到文件首部
+        _file->seek(0);
+    }
+
+    _state = state;
+    emit stateChanged();
 }
 
 YuvPlayer::State YuvPlayer::getState() {
@@ -50,11 +85,25 @@ YuvPlayer::State YuvPlayer::getState() {
 void YuvPlayer::setYuv(Yuv &yuv) {
     _yuv = yuv;
 
+    // 关闭上一个文件
+    closeFile();
+
+    qDebug() << "打开" << yuv.filename;
+
     // 打开文件
-    _file.setFileName(yuv.filename);
-    if (!_file.open(QFile::ReadOnly)) {
+    _file = new QFile(yuv.filename);
+    if (!_file->open(QFile::ReadOnly)) {
         qDebug() << "file open error" << yuv.filename;
     }
+
+    // 刷帧的时间间隔
+    _interval = 1000 / _yuv.fps;
+
+    // 一帧图片的大小
+    _imgSize = av_image_get_buffer_size(yuv.pixelFormat,
+                                        yuv.width,
+                                        yuv.height,
+                                        1);
 
     // 组件的尺寸
     int w = width();
@@ -63,8 +112,8 @@ void YuvPlayer::setYuv(Yuv &yuv) {
     // 计算rect
     int dx = 0;
     int dy = 0;
-    int dw = _yuv.width;
-    int dh = _yuv.height;
+    int dw = yuv.width;
+    int dh = yuv.height;
 
     // 计算目标尺寸
     if (dw > w || dh > h) { // 缩放
@@ -81,18 +130,6 @@ void YuvPlayer::setYuv(Yuv &yuv) {
     dx = (w - dw) >> 1;
     dy = (h - dh) >> 1;
 
-//    if (图片宽度 <= 播放器宽度 && 图片高度 <= 播放器高度) {
-//        // 居中
-//    } else {
-//        if (图片宽度 > 播放器宽度 && 图片高度 > 播放器高度) {
-
-//        } else if (图片宽度 > 播放器宽度) {
-
-//        } else if (图片高度 > 播放器高度) {
-
-//        }
-//    }
-
     _dstRect = QRect(dx, dy, dw, dh);
     qDebug() << "视频的矩形框" << dx << dy << dw << dh;
 }
@@ -102,21 +139,14 @@ void YuvPlayer::setYuv(Yuv &yuv) {
 void YuvPlayer::paintEvent(QPaintEvent *event) {
     if (!_currentImage) return;
 
-//    qDebug() << "paintEvent";
-
     // 将图片绘制到当前组件上
     QPainter(this).drawImage(_dstRect, *_currentImage);
-//    QPainter(this).drawImage(QPoint(0, 0), *_currentImage);
 }
 
 void YuvPlayer::timerEvent(QTimerEvent *event) {
     // 图片大小
-    int imgSize = av_image_get_buffer_size(_yuv.pixelFormat,
-                                           _yuv.width,
-                                           _yuv.height,
-                                           1);
-    char data[imgSize];
-    if (_file.read(data, imgSize) > 0) {
+    char data[_imgSize];
+    if (_file->read(data, _imgSize) == _imgSize) {
         RawVideoFrame in = {
             data,
             _yuv.width, _yuv.height,
@@ -124,8 +154,9 @@ void YuvPlayer::timerEvent(QTimerEvent *event) {
         };
         RawVideoFrame out = {
             nullptr,
-            _yuv.width, _yuv.height,
-            AV_PIX_FMT_RGB24
+            _yuv.width >> 4 << 4,
+                       _yuv.height >> 4 << 4,
+                       AV_PIX_FMT_RGB24
         };
         FFmpegs::convertRawVideo(in, out);
 
@@ -135,10 +166,28 @@ void YuvPlayer::timerEvent(QTimerEvent *event) {
 
         // 刷新
         update();
-    } else {
-        // 文件数据已经读取完毕
-        killTimer(_timerId);
+    } else { // 文件数据已经读取完毕
+        // 停止定时器
+        stopTimer();
+
+        // 正常播放完毕
+        setState(YuvPlayer::Finished);
     }
+}
+
+void YuvPlayer::closeFile() {
+    if (!_file) return;
+
+    _file->close();
+    delete _file;
+    _file = nullptr;
+}
+
+void YuvPlayer::stopTimer() {
+    if (_timerId == 0) return;
+
+    killTimer(_timerId);
+    _timerId = 0;
 }
 
 void YuvPlayer::freeCurrentImage() {

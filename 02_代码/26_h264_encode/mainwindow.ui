@@ -14,43 +14,17 @@
    <string>MainWindow</string>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <widget class="QPushButton" name="playButton">
+   <widget class="QPushButton" name="audioButton">
     <property name="geometry">
      <rect>
-      <x>10</x>
-      <y>10</y>
+      <x>60</x>
+      <y>40</y>
       <width>93</width>
       <height>28</height>
      </rect>
     </property>
     <property name="text">
-     <string>播放</string>
-    </property>
-   </widget>
-   <widget class="QPushButton" name="stopButton">
-    <property name="geometry">
-     <rect>
-      <x>120</x>
-      <y>10</y>
-      <width>93</width>
-      <height>28</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>停止</string>
-    </property>
-   </widget>
-   <widget class="QPushButton" name="nextButton">
-    <property name="geometry">
-     <rect>
-      <x>230</x>
-      <y>10</y>
-      <width>93</width>
-      <height>28</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>下一个</string>
+     <string>开始编码</string>
     </property>
    </widget>
   </widget>
