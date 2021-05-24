@@ -85,6 +85,8 @@ void FFmpegs::h264Encode(VideoEncodeSpec &in,
     // 存放编码后的数据（h264）
     AVPacket *pkt = nullptr;
 
+//    uint8_t *buf = nullptr;
+
     // 获取编码器
     codec = avcodec_find_encoder_by_name("libx264");
     if (!codec) {
@@ -94,7 +96,7 @@ void FFmpegs::h264Encode(VideoEncodeSpec &in,
 
     // 检查输入数据的采样格式
     if (!check_pix_fmt(codec, in.pixFmt)) {
-        qDebug() << "unsupported sample format"
+        qDebug() << "unsupported pixel format"
                  << av_get_pix_fmt_name(in.pixFmt);
         return;
     }
@@ -142,6 +144,19 @@ void FFmpegs::h264Encode(VideoEncodeSpec &in,
         goto end;
     }
 
+    // 创建输入缓冲区（方法2）
+//    buf = (uint8_t *) av_malloc(imgSize);
+//    ret = av_image_fill_arrays(frame->data, frame->linesize,
+//                               buf,
+//                               in.pixFmt, in.width, in.height, 1);
+//    if (ret < 0) {
+//        ERROR_BUF(ret);
+//        qDebug() << "av_image_fill_arrays error" << errbuf;
+//        goto end;
+//    }
+//    qDebug() << buf << frame->data[0];
+
+    // 创建输入缓冲区（方法3）
 //    ret = av_frame_get_buffer(frame, 0);
 //    if (ret < 0) {
 //        ERROR_BUF(ret);
@@ -186,12 +201,14 @@ end:
     inFile.close();
     outFile.close();
 
+//    av_freep(&buf);
+
     // 释放资源
     if (frame) {
-        // uint8_t *p = frame->data[0];
         av_freep(&frame->data[0]);
+//        av_free(frame->data[0]);
+//        frame->data[0] = nullptr;
         av_frame_free(&frame);
-        // qDebug() << *p;
     }
     av_packet_free(&pkt);
     avcodec_free_context(&ctx);
