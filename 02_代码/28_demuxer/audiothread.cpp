@@ -1,7 +1,11 @@
 #include "audiothread.h"
 
 #include <QDebug>
-#include "ffmpegs.h"
+#include "demuxer.h"
+
+extern "C" {
+#include <libavutil/imgutils.h>
+}
 
 AudioThread::AudioThread(QObject *parent) : QThread(parent) {
     // 当监听到线程结束时（finished），就调用deleteLater回收内存
@@ -21,12 +25,18 @@ AudioThread::~AudioThread() {
 }
 
 void AudioThread::run() {
-    AudioDecodeSpec out;
-    out.filename = "F:/res/out.pcm";
+    AudioDecodeSpec aOut;
+    aOut.filename = "F:/res/out.pcm";
 
-    FFmpegs::aacDecode("F:/res/in.aac", out);
+    VideoDecodeSpec vOut;
+    vOut.filename = "F:/res/out.yuv";
 
-    qDebug() << "采样率：" << out.sampleRate;
-    qDebug() << "采样格式：" << av_get_sample_fmt_name(out.sampleFmt);
-    qDebug() << "声道数：" << av_get_channel_layout_nb_channels(out.chLayout);
+    Demuxer().demux("F:/res/in.mp4", aOut, vOut);
+
+    qDebug() << aOut.sampleRate
+             << av_get_channel_layout_nb_channels(aOut.chLayout)
+             << av_get_sample_fmt_name(aOut.sampleFmt);
+
+    qDebug() << vOut.width << vOut.height
+             << vOut.fps << av_get_pix_fmt_name(vOut.pixFmt);
 }

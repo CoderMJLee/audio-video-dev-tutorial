@@ -141,7 +141,7 @@ void FFmpegs::aacEncode(AudioEncodeSpec &in,
 
     // 利用nb_samples、format、channel_layout创建缓冲区
     ret = av_frame_get_buffer(frame, 0);
-    if (ret) {
+    if (ret < 0) {
         ERROR_BUF(ret);
         qDebug() << "av_frame_get_buffer error" << errbuf;
         goto end;

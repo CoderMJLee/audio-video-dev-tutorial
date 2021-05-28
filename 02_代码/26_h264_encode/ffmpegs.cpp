@@ -27,7 +27,6 @@ static int check_pix_fmt(const AVCodec *codec,
     return 0;
 }
 
-// 音频编码
 // 返回负数：中途出现了错误
 // 返回0：编码操作正常完成
 static int encode(AVCodecContext *ctx,

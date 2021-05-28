@@ -76,7 +76,7 @@ void PlayThread::run() {
                                 PIXEL_FORMAT,
                                 SDL_TEXTUREACCESS_STREAMING,
                                 IMG_W, IMG_H);
-    END(!texture, SDL_CreateTextureFromSurface);
+    END(!texture, SDL_CreateTexture);
 
     // 打开文件
     if (!file.open(QFile::ReadOnly)) {

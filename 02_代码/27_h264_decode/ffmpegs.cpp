@@ -231,7 +231,7 @@ end:
 // bug fix
 // https://patchwork.ffmpeg.org/project/ffmpeg/patch/tencent_609A2E9F73AB634ED670392DD89A63400008@qq.com/
 
-// 
+//
 //    while ((inLen = inFile.read(inDataArray, IN_DATA_SIZE)) > 0)
 //        while (inLen > 0) {
 //            // 经过解析器解析

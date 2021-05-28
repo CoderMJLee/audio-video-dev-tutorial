@@ -136,57 +136,85 @@ void FFmpegs::aacDecode(const char *inFilename,
         goto end;
     }
 
-    // 读取文件数据
-    inLen = inFile.read(inData, IN_DATA_SIZE);
-    while (inLen > 0) {
-        // 经过解析器解析
-        // 内部调用的核心逻辑是：ff_aac_ac3_parse
-        ret = av_parser_parse2(parserCtx, ctx,
-                               &pkt->data, &pkt->size,
-                               (uint8_t *) inData, inLen,
-                               AV_NOPTS_VALUE, AV_NOPTS_VALUE, 0);
+    while ((inLen = inFile.read(inDataArray, IN_DATA_SIZE)) > 0) {
+        inData = inDataArray;
 
-        /*
-         pkt->data = inData;
-         pkt->size = inLen;
-         */
-//        qDebug() << pkt->data << (uint8_t *) inData;
-//        qDebug() << pkt->size << inLen;
+        while (inLen > 0) {
+            // 经过解析器解析
+            // 内部调用的核心逻辑是：ff_aac_ac3_parse
+            ret = av_parser_parse2(parserCtx, ctx,
+                                   &pkt->data, &pkt->size,
+                                   (uint8_t *) inData, inLen,
+                                   AV_NOPTS_VALUE, AV_NOPTS_VALUE, 0);
 
-        if (ret < 0) {
-            ERROR_BUF(ret);
-            qDebug() << "av_parser_parse2 error" << errbuf;
-            goto end;
-        }
+            if (ret < 0) {
+                ERROR_BUF(ret);
+                qDebug() << "av_parser_parse2 error" << errbuf;
+                goto end;
+            }
 
-        // 跳过已经解析过的数据
-        inData += ret;
-        // 减去已经解析过的数据大小
-        inLen -= ret;
+            // 跳过已经解析过的数据
+            inData += ret;
+            // 减去已经解析过的数据大小
+            inLen -= ret;
 
-        // 解码
-        if (pkt->size > 0 && decode(ctx, pkt, frame, outFile) < 0) {
-            goto end;
-        }
-
-        // 检查是否需要读取新的文件数据
-        if (inLen < REFILL_THRESH && !inEnd) {
-            // 剩余数据移动到缓冲区的最前面
-            memmove(inDataArray, inData, inLen);
-
-            // 重置inData
-            inData = inDataArray;
-
-            // 读取文件数据到inData + inLen位置
-            int len = inFile.read(inData + inLen, IN_DATA_SIZE - inLen);
-            if (len > 0) { // 有读取到文件数据
-                inLen += len;
-            } else { // 文件中已经没有任何数据
-                // 标记为已经读取到文件的尾部
-                inEnd = 1;
+            // 解码
+            if (pkt->size > 0 && decode(ctx, pkt, frame, outFile) < 0) {
+                goto end;
             }
         }
     }
+
+//    inLen = inFile.read(inData, IN_DATA_SIZE);
+//    while (inLen > 0) {
+//        // 经过解析器解析
+//        // 内部调用的核心逻辑是：ff_aac_ac3_parse
+//        ret = av_parser_parse2(parserCtx, ctx,
+//                               &pkt->data, &pkt->size,
+//                               (uint8_t *) inData, inLen,
+//                               AV_NOPTS_VALUE, AV_NOPTS_VALUE, 0);
+
+//        /*
+//         pkt->data = inData;
+//         pkt->size = inLen;
+//         */
+////        qDebug() << pkt->data << (uint8_t *) inData;
+////        qDebug() << pkt->size << inLen;
+
+//        if (ret < 0) {
+//            ERROR_BUF(ret);
+//            qDebug() << "av_parser_parse2 error" << errbuf;
+//            goto end;
+//        }
+
+//        // 跳过已经解析过的数据
+//        inData += ret;
+//        // 减去已经解析过的数据大小
+//        inLen -= ret;
+
+//        // 解码
+//        if (pkt->size > 0 && decode(ctx, pkt, frame, outFile) < 0) {
+//            goto end;
+//        }
+
+//        // 检查是否需要读取新的文件数据
+//        if (inLen < REFILL_THRESH && !inEnd) {
+//            // 剩余数据移动到缓冲区的最前面
+//            memmove(inDataArray, inData, inLen);
+
+//            // 重置inData
+//            inData = inDataArray;
+
+//            // 读取文件数据到inData + inLen位置
+//            int len = inFile.read(inData + inLen, IN_DATA_SIZE - inLen);
+//            if (len > 0) { // 有读取到文件数据
+//                inLen += len;
+//            } else { // 文件中已经没有任何数据
+//                // 标记为已经读取到文件的尾部
+//                inEnd = 1;
+//            }
+//        }
+//    }
 
     // 刷新缓冲区
 //    pkt->data = NULL;
