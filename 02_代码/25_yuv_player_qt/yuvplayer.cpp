@@ -22,17 +22,17 @@ YuvPlayer::~YuvPlayer() {
 }
 
 void YuvPlayer::play() {
-    if (_state == YuvPlayer::Playing) return;
+    if (_state == Playing) return;
 
     // 状态可能是：暂停、停止、正常完毕
 
     _timerId = startTimer(_interval);
 
-    setState(YuvPlayer::Playing);
+    setState(Playing);
 }
 
 void YuvPlayer::pause() {
-    if (_state != YuvPlayer::Playing) return;
+    if (_state != Playing) return;
 
     // 状态可能是：正在播放
 
@@ -40,11 +40,11 @@ void YuvPlayer::pause() {
     stopTimer();
 
     // 改变状态
-    setState(YuvPlayer::Paused);
+    setState(Paused);
 }
 
 void YuvPlayer::stop() {
-    if (_state == YuvPlayer::Stopped) return;
+    if (_state == Stopped) return;
 
     // 状态可能是：正在播放、暂停、正常完毕
 
@@ -58,18 +58,18 @@ void YuvPlayer::stop() {
     update();
 
     // 改变状态
-    setState(YuvPlayer::Stopped);
+    setState(Stopped);
 }
 
 bool YuvPlayer::isPlaying() {
-    return _state == YuvPlayer::Playing;
+    return _state == Playing;
 }
 
 void YuvPlayer::setState(State state) {
     if (state == _state) return;
 
-    if (state == YuvPlayer::Stopped
-            || state == YuvPlayer::Finished) {
+    if (state == Stopped
+            || state == Finished) {
         // 让文件读取指针回到文件首部
         _file->seek(0);
     }
@@ -171,7 +171,7 @@ void YuvPlayer::timerEvent(QTimerEvent *event) {
         stopTimer();
 
         // 正常播放完毕
-        setState(YuvPlayer::Finished);
+        setState(Finished);
     }
 }
 

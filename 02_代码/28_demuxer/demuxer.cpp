@@ -1,6 +1,10 @@
 #include "demuxer.h"
 #include <QDebug>
 
+extern "C" {
+#include <libavutil/imgutils.h>
+}
+
 #define ERROR_BUF \
     char errbuf[1024]; \
     av_strerror(ret, errbuf, sizeof (errbuf));
@@ -30,11 +34,10 @@ void Demuxer::demux(const char *inFilename,
     _aOut = &aOut;
     _vOut = &vOut;
 
+    AVPacket *pkt = nullptr;
+
     // 返回结果
     int ret = 0;
-
-    // 存放解码前的数据
-    AVPacket pkt;
 
     // 创建解封装上下文、打开文件
     ret = avformat_open_input(&_fmtCtx, inFilename, nullptr, nullptr);
@@ -68,27 +71,34 @@ void Demuxer::demux(const char *inFilename,
     }
 
     // 初始化pkt
-    av_init_packet(&pkt);
-    pkt.data = nullptr;
-    pkt.size = 0;
+    pkt = av_packet_alloc();
+    pkt->data = nullptr;
+    pkt->size = 0;
 
     // 从输入文件中读取数据
-    while (av_read_frame(_fmtCtx, &pkt) == 0) {
-        if (pkt.stream_index == _aStreamIdx) { // 读取到的是音频数据
-            ret = decode(_aDecodeCtx, &pkt);
-        } else if (pkt.stream_index == _vStreamIdx) { // 读取到的是视频数据
-            ret = decode(_vDecodeCtx, &pkt);
+    while (av_read_frame(_fmtCtx, pkt) == 0) {
+        if (pkt->stream_index == _aStreamIdx) { // 读取到的是音频数据
+            ret = decode(_aDecodeCtx, pkt, &Demuxer::writeAudioFrame);
+        } else if (pkt->stream_index == _vStreamIdx) { // 读取到的是视频数据
+            ret = decode(_vDecodeCtx, pkt, &Demuxer::writeVideoFrame);
         }
-        av_packet_unref(&pkt);
+        // 释放pkt内部指针指向的一些额外内存
+        av_packet_unref(pkt);
 
         if (ret < 0) {
             goto end;
         }
     }
+    /*
+    类方法、静态方法（函数）
+    对象方法、动态方法（函数）
+    */
 
     // 刷新缓冲区
-    decode(_aDecodeCtx, nullptr);
-    decode(_vDecodeCtx, nullptr);
+//    AVPacket *pkt = _pkt;
+//    _pkt = nullptr;
+    decode(_aDecodeCtx, nullptr, &Demuxer::writeAudioFrame);
+    decode(_vDecodeCtx, nullptr, &Demuxer::writeVideoFrame);
 
 end:
     _aOutFile.close();
@@ -97,15 +107,15 @@ end:
     avcodec_free_context(&_vDecodeCtx);
     avformat_close_input(&_fmtCtx);
     av_frame_free(&_frame);
+    av_packet_free(&pkt);
+    av_freep(&_imgBuf[0]);
 }
 
 // 初始化音频信息
 int Demuxer::initAudioInfo() {
     // 初始化解码器
     int ret = initDecoder(&_aDecodeCtx, &_aStreamIdx, AVMEDIA_TYPE_AUDIO);
-    if (ret < 0) {
-        return ret;
-    }
+    RET(initDecoder);
 
     // 打开文件
     _aOutFile.setFileName(_aOut->filename);
@@ -119,6 +129,10 @@ int Demuxer::initAudioInfo() {
     _aOut->sampleFmt = _aDecodeCtx->sample_fmt;
     _aOut->chLayout = _aDecodeCtx->channel_layout;
 
+    // 音频样本帧的大小
+    _sampleSize = av_get_bytes_per_sample(_aOut->sampleFmt);
+    _sampleFrameSize = _sampleSize * _aDecodeCtx->channels;
+
     return 0;
 }
 
@@ -126,9 +140,7 @@ int Demuxer::initAudioInfo() {
 int Demuxer::initVideoInfo() {
     // 初始化解码器
     int ret = initDecoder(&_vDecodeCtx, &_vStreamIdx, AVMEDIA_TYPE_VIDEO);
-    if (ret < 0) {
-        return ret;
-    }
+    RET(initDecoder);
 
     // 打开文件
     _vOutFile.setFileName(_vOut->filename);
@@ -140,8 +152,20 @@ int Demuxer::initVideoInfo() {
     // 保存视频参数
     _vOut->width = _vDecodeCtx->width;
     _vOut->height = _vDecodeCtx->height;
-    _vOut->fps = _vDecodeCtx->framerate.num;
     _vOut->pixFmt = _vDecodeCtx->pix_fmt;
+    // 帧率
+    AVRational framerate = av_guess_frame_rate(
+                               _fmtCtx,
+                               _fmtCtx->streams[_vStreamIdx],
+                               nullptr);
+    _vOut->fps = framerate.num / framerate.den;
+
+    // 创建用于存放一帧解码图片的缓冲区
+    ret = av_image_alloc(_imgBuf, _imgLinesizes,
+                         _vOut->width, _vOut->height,
+                         _vOut->pixFmt, 1);
+    RET(av_image_alloc);
+    _imgSize = ret;
 
     return 0;
 }
@@ -164,6 +188,12 @@ int Demuxer::initDecoder(AVCodecContext **decodeCtx,
     }
 
     // 为当前流找到合适的解码器
+//    AVCodec *decoder = nullptr;
+//    if (stream->codecpar->codec_id == AV_CODEC_ID_AAC) {
+//        decoder = avcodec_find_decoder_by_name("libfdk_aac");
+//    } else {
+//        decoder = avcodec_find_decoder(stream->codecpar->codec_id);
+//    }
     AVCodec *decoder = avcodec_find_decoder(stream->codecpar->codec_id);
     if (!decoder) {
         qDebug() << "decoder not found" << stream->codecpar->codec_id;
@@ -188,7 +218,9 @@ int Demuxer::initDecoder(AVCodecContext **decodeCtx,
     return 0;
 }
 
-int Demuxer::decode(AVCodecContext *decodeCtx, AVPacket *pkt) {
+int Demuxer::decode(AVCodecContext *decodeCtx,
+                    AVPacket *pkt,
+                    void (Demuxer::*func)()) {
     // 发送压缩数据到解码器
     int ret = avcodec_send_packet(decodeCtx, pkt);
     RET(avcodec_send_packet);
@@ -201,30 +233,57 @@ int Demuxer::decode(AVCodecContext *decodeCtx, AVPacket *pkt) {
         }
         RET(avcodec_receive_frame);
 
-        // 将frame的数据写入文件
-//        if (pkt->stream_index == _vStreamIdx) {
-        if (decodeCtx->codec->type == AVMEDIA_TYPE_VIDEO) {
-            writeVideoFrame();
-        } else {
-            writeAudioFrame();
-        }
+        // 执行写入文件的代码
+        (this->*func)();
+
+//        // 将frame的数据写入文件
+//        if (decodeCtx->codec->type == AVMEDIA_TYPE_VIDEO) {
+//            writeVideoFrame();
+//        } else {
+//            writeAudioFrame();
+//        }
     }
 }
 
 void Demuxer::writeVideoFrame() {
-    // 写入Y平面
-    _vOutFile.write((char *) _frame->data[0],
-                    _frame->linesize[0] * _vOut->height);
-    // 写入U平面
-    _vOutFile.write((char *) _frame->data[1],
-                    _frame->linesize[1] * _vOut->height >> 1);
-    // 写入V平面
-    _vOutFile.write((char *) _frame->data[2],
-                    _frame->linesize[2] * _vOut->height >> 1);
+//    // 写入Y平面
+//    _vOutFile.write((char *) _frame->data[0],
+//                    _frame->linesize[0] * _vOut->height);
+//    // 写入U平面
+//    _vOutFile.write((char *) _frame->data[1],
+//                    _frame->linesize[1] * _vOut->height >> 1);
+//    // 写入V平面
+//    _vOutFile.write((char *) _frame->data[2],
+//                    _frame->linesize[2] * _vOut->height >> 1);
+
+    // 拷贝frame的数据到_imgBuf缓冲区
+    av_image_copy(_imgBuf, _imgLinesizes,
+                  (const uint8_t **)(_frame->data), _frame->linesize,
+                  _vOut->pixFmt, _vOut->width, _vOut->height);
+    // 将缓冲区的数据写入文件
+    _vOutFile.write((char *) _imgBuf[0], _imgSize);
 }
 
 void Demuxer::writeAudioFrame() {
-    // 考虑好plannar
-//    _frame
-//    _aOutFile
+    // libfdk_aac解码器，解码出来的PCM格式：s16
+    // aac解码器，解码出来的PCM格式：ftlp
+
+    // LLLL RRRR DDDD FFFF
+
+    if (av_sample_fmt_is_planar(_aOut->sampleFmt)) { // planar
+        // 外层循环：每一个声道的样本数
+        // si = sample index
+        for (int si = 0; si < _frame->nb_samples; si++) {
+            // 内层循环：有多少个声道
+            // ci = channel index
+            for (int ci = 0; ci < _aDecodeCtx->channels; ci++) {
+                char *begin = (char *) (_frame->data[ci] + si * _sampleSize);
+                _aOutFile.write(begin, _sampleSize);
+            }
+        }
+    } else { // 非planar
+//        _aOutFile.write((char *) _frame->data[0], _frame->linesize[0]);
+        _aOutFile.write((char *) _frame->data[0],
+                        _frame->nb_samples * _sampleFrameSize);
+    }
 }

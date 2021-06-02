@@ -46,15 +46,27 @@ private:
     // 函数参数
     AudioDecodeSpec *_aOut = nullptr;
     VideoDecodeSpec *_vOut = nullptr;
+    // 存放解码前的数据
+//    AVPacket *_pkt = nullptr;
     // 存放解码后的数据
     AVFrame *_frame = nullptr;
+    // 存放一帧解码图片的缓冲区
+    uint8_t *_imgBuf[4] = {nullptr};
+    int _imgLinesizes[4] = {0};
+    int _imgSize = 0;
+    // 每个音频样本帧（包含所有声道）的大小
+    int _sampleFrameSize = 0;
+    // 每一个音频样本的大小（单声道）
+    int _sampleSize = 0;
 
     int initVideoInfo();
     int initAudioInfo();
     int initDecoder(AVCodecContext **decodeCtx,
                     int *streamIdx,
                     AVMediaType type);
-    int decode(AVCodecContext *decodeCtx, AVPacket *pkt);
+    int decode(AVCodecContext *decodeCtx,
+               AVPacket *pkt,
+               void (Demuxer::*func)());
     void writeVideoFrame();
     void writeAudioFrame();
 };
