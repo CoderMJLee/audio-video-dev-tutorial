@@ -17,10 +17,16 @@ DEFINES += QT_DEPRECATED_WARNINGS
 
 SOURCES += \
     main.cpp \
-    mainwindow.cpp
+    mainwindow.cpp \
+    videoplayer.cpp \
+    videoslider.cpp \
+    videowidget.cpp
 
 HEADERS += \
-    mainwindow.h
+    mainwindow.h \
+    videoplayer.h \
+    videoslider.h \
+    videowidget.h
 
 FORMS += \
     mainwindow.ui

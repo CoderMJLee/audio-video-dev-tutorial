@@ -1,9 +1,4 @@
-> 文本的主要内容是：使用[SDL](https://www.cnblogs.com/mjios/p/14581738.html#toc_title_1)显示一张BMP图片，算是为后面的《[显示YUV图片](https://www.cnblogs.com/mjios/p/14733965.html)》做准备。
-
-为什么是显示BMP图片？而不是显示JPG或PNG图片?
-
-- 因为SDL内置了加载BMP的API，使用起来会更加简单，便于初学者学习使用SDL
-- 如果想要轻松加载JPG、PNG等其他格式的图片，可以使用第三方库：[SDL_image](https://www.libsdl.org/projects/SDL_image/)
+> 文本的主要内容是：使用[SDL](https://www.cnblogs.com/mjios/p/14581738.html#toc_title_1)显示一张YUV图片，整体过程跟《[显示BMP图片](https://www.cnblogs.com/mjios/p/14733502.html)》比较像。
 
 ## 宏定义
 
@@ -11,12 +6,16 @@
 #include <SDL2/SDL.h>
 #include <QDebug>
 
-// 出错了就执行goto end
 #define END(judge, func) \
     if (judge) { \
-        qDebug() << #func << "Error" << SDL_GetError(); \
+        qDebug() << #func << "error" << SDL_GetError(); \
         goto end; \
     }
+
+#define FILENAME "F:/res/in.yuv"
+#define PIXEL_FORMAT SDL_PIXELFORMAT_IYUV
+#define IMG_W 512
+#define IMG_H 512
 ```
 
 ## 变量定义
@@ -24,12 +23,15 @@
 ```cpp
 // 窗口
 SDL_Window *window = nullptr;
+
 // 渲染上下文
 SDL_Renderer *renderer = nullptr;
-// 像素数据
-SDL_Surface *surface = nullptr;
+
 // 纹理（直接跟特定驱动程序相关的像素数据）
 SDL_Texture *texture = nullptr;
+
+// 文件
+QFile file(FILENAME);
 ```
 
 ## 初始化子系统
@@ -39,21 +41,13 @@ SDL_Texture *texture = nullptr;
 END(SDL_Init(SDL_INIT_VIDEO), SDL_Init);
 ```
 
-## 加载BMP
-
-```cpp
-// 加载BMP
-surface = SDL_LoadBMP("F:/in.bmp");
-END(!surface, SDL_LoadBMP);
-```
-
 ## 创建窗口
 
 ```cpp
 // 创建窗口
 window = SDL_CreateWindow(
              // 窗口标题
-             "SDL显示BMP图片",
+             "SDL显示YUV图片",
              // 窗口X（未定义）
              SDL_WINDOWPOS_UNDEFINED,
              // 窗口Y（未定义）
@@ -85,30 +79,44 @@ END(!renderer, SDL_CreateRenderer);
 
 ```cpp
 // 创建纹理
-texture = SDL_CreateTextureFromSurface(
-              renderer,
-              surface);
-END(!texture, SDL_CreateTextureFromSurface);
+texture = SDL_CreateTexture(renderer,
+                            PIXEL_FORMAT,
+                            SDL_TEXTUREACCESS_STREAMING,
+                            IMG_W, IMG_H);
+END(!texture, SDL_CreateTexture);
+```
+
+## 打开文件
+
+```cpp
+// 打开文件
+if (!file.open(QFile::ReadOnly)) {
+    qDebug() << "file open error" << FILENAME;
+    goto end;
+}
 ```
 
 ## 渲染
 
 ```cpp
-// 设置绘制颜色（这里随便设置了一个颜色：黄色）
+// 将YUV的像素数据填充到texture
+END(SDL_UpdateTexture(texture, nullptr, file.readAll().data(), IMG_W),
+    SDL_UpdateTexture);
+
+// 设置绘制颜色（画笔颜色）
 END(SDL_SetRenderDrawColor(renderer,
-                             255, 255, 0,
-                             SDL_ALPHA_OPAQUE),
-      SDL_SetRenderDrawColor);
+                           0, 0, 0, SDL_ALPHA_OPAQUE),
+    SDL_SetRenderDrawColor);
 
-// 用DrawColor清除渲染目标
+// 用绘制颜色（画笔颜色）清除渲染目标
 END(SDL_RenderClear(renderer),
-      SDL_RenderClear);
+    SDL_RenderClear);
 
-// 复制纹理到渲染目标上
+// 拷贝纹理数据到渲染目标（默认是window）
 END(SDL_RenderCopy(renderer, texture, nullptr, nullptr),
-      SDL_RenderCopy);
+    SDL_RenderCopy);
 
-// 将此前的所有需要渲染的内容更新到屏幕上
+// 更新所有的渲染操作到屏幕上
 SDL_RenderPresent(renderer);
 ```
 
@@ -123,8 +131,7 @@ SDL_Delay(3000);
 
 ```cpp
 end:
-    // 释放资源
-    SDL_FreeSurface(surface);
+    file.close();
     SDL_DestroyTexture(texture);
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);

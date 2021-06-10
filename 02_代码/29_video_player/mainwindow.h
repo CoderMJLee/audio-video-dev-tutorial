@@ -2,6 +2,7 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
+#include "videoplayer.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -17,9 +18,20 @@ public:
     ~MainWindow();
 
 private slots:
+    void onPlayerStateChanged(VideoPlayer *player);
+
     void on_stopBtn_clicked();
+
+    void on_openFileBtn_clicked();
+
+    void on_currentSlider_valueChanged(int value);
+
+    void on_volumnSlider_valueChanged(int value);
+
+    void on_playBtn_clicked();
 
 private:
     Ui::MainWindow *ui;
+    VideoPlayer *_player;
 };
 #endif // MAINWINDOW_H

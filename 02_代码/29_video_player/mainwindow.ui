@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>921</width>
-    <height>692</height>
+    <width>810</width>
+    <height>658</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -17,6 +17,12 @@
    <layout class="QVBoxLayout" name="verticalLayout">
     <item>
      <widget class="QStackedWidget" name="playWidget">
+      <property name="minimumSize">
+       <size>
+        <width>0</width>
+        <height>300</height>
+       </size>
+      </property>
       <property name="currentIndex">
        <number>0</number>
       </property>
@@ -40,7 +46,7 @@
       <widget class="QWidget" name="page_2">
        <layout class="QGridLayout" name="gridLayout">
         <item row="0" column="0">
-         <widget class="QWidget" name="videoWidget" native="true"/>
+         <widget class="VideoWidget" name="videoWidget" native="true"/>
         </item>
        </layout>
       </widget>
@@ -52,6 +58,9 @@
        <layout class="QHBoxLayout" name="horizontalLayout_2">
         <item>
          <widget class="QPushButton" name="playBtn">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
           <property name="maximumSize">
            <size>
             <width>40</width>
@@ -65,6 +74,9 @@
         </item>
         <item>
          <widget class="QPushButton" name="stopBtn">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
           <property name="maximumSize">
            <size>
             <width>40</width>
@@ -79,10 +91,13 @@
         <item>
          <layout class="QHBoxLayout" name="horizontalLayout_3">
           <item>
-           <widget class="QSlider" name="currentSlider">
+           <widget class="VideoSlider" name="currentSlider">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
             <property name="minimumSize">
              <size>
-              <width>350</width>
+              <width>250</width>
               <height>0</height>
              </size>
             </property>
@@ -160,6 +175,9 @@
          <layout class="QHBoxLayout" name="horizontalLayout_4">
           <item>
            <widget class="QPushButton" name="silenceBtn">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
             <property name="maximumSize">
              <size>
               <width>40</width>
@@ -172,7 +190,10 @@
            </widget>
           </item>
           <item>
-           <widget class="QSlider" name="volumnSlider">
+           <widget class="VideoSlider" name="volumnSlider">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
             <property name="minimumSize">
              <size>
               <width>100</width>
@@ -181,9 +202,15 @@
             </property>
             <property name="maximumSize">
              <size>
-              <width>16777215</width>
+              <width>100</width>
               <height>16777215</height>
              </size>
+            </property>
+            <property name="maximum">
+             <number>100</number>
+            </property>
+            <property name="value">
+             <number>100</number>
             </property>
             <property name="orientation">
              <enum>Qt::Horizontal</enum>
@@ -192,6 +219,18 @@
           </item>
           <item>
            <widget class="QLabel" name="volumnLabel">
+            <property name="minimumSize">
+             <size>
+              <width>30</width>
+              <height>0</height>
+             </size>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>30</width>
+              <height>16777215</height>
+             </size>
+            </property>
             <property name="font">
              <font>
               <family>Consolas</family>
@@ -199,6 +238,9 @@
             </property>
             <property name="text">
              <string>100</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
             </property>
            </widget>
           </item>
@@ -215,13 +257,26 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>921</width>
+     <width>810</width>
      <height>26</height>
     </rect>
    </property>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>VideoWidget</class>
+   <extends>QWidget</extends>
+   <header>videowidget.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>VideoSlider</class>
+   <extends>QSlider</extends>
+   <header>videoslider.h</header>
+  </customwidget>
+ </customwidgets>
  <resources/>
  <connections/>
 </ui>
