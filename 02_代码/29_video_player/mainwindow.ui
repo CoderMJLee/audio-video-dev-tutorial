@@ -26,7 +26,7 @@
       <property name="currentIndex">
        <number>0</number>
       </property>
-      <widget class="QWidget" name="page">
+      <widget class="QWidget" name="openFilePage">
        <layout class="QHBoxLayout" name="horizontalLayout_5">
         <item>
          <widget class="QPushButton" name="openFileBtn">
@@ -43,7 +43,7 @@
         </item>
        </layout>
       </widget>
-      <widget class="QWidget" name="page_2">
+      <widget class="QWidget" name="videoPage">
        <layout class="QGridLayout" name="gridLayout">
         <item row="0" column="0">
          <widget class="VideoWidget" name="videoWidget" native="true"/>
