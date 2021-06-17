@@ -4,7 +4,6 @@
 #include <QMainWindow>
 #include <list>
 #include <SDL2/SDL.h>
-#include "condmutex.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -25,12 +24,12 @@ private slots:
 
 private:
     Ui::MainWindow *ui;
-//    /** 互斥锁 */
-//    SDL_mutex *_mutex = nullptr;
-//    /** 条件变量 */
-//    SDL_cond *_cond = nullptr;
-
-    CondMutex *_mutex = nullptr;
+    /** 互斥锁 */
+    SDL_mutex *_mutex = nullptr;
+    /** 条件变量：消费者等待，生产者唤醒 */
+    SDL_cond *_cond1 = nullptr;
+    /** 条件变量：生产者等待，消费者唤醒 */
+    SDL_cond *_cond2 = nullptr;
     std::list<QString> *_list = nullptr;
     int _index = 0;
 

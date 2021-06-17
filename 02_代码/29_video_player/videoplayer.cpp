@@ -2,33 +2,30 @@
 #include <thread>
 #include <QDebug>
 
-#define ERROR_BUF \
-    char errbuf[1024]; \
-    av_strerror(ret, errbuf, sizeof (errbuf));
-
-#define END(func) \
-    if (ret < 0) { \
-        ERROR_BUF; \
-        qDebug() << #func << "error" << errbuf; \
-        setState(Stopped); \
-        emit playFailed(this); \
-        goto end; \
-    }
-
-#define RET(func) \
-    if (ret < 0) { \
-        ERROR_BUF; \
-        qDebug() << #func << "error" << errbuf; \
-        return ret; \
-    }
-
 #pragma mark - 构造、析构
 VideoPlayer::VideoPlayer(QObject *parent) : QObject(parent) {
+    // 初始化Audio子系统
+    if (SDL_Init(SDL_INIT_AUDIO)) {
+        // 返回值不是0，就代表失败
+        qDebug() << "SDL_Init error" << SDL_GetError();
+        emit playFailed(this);
+        return;
+    }
 
+    _aPktList = new std::list<AVPacket>();
+    _vPktList = new std::list<AVPacket>();
+
+    _aMutex = new CondMutex();
+    _vMutex = new CondMutex();
 }
 
 VideoPlayer::~VideoPlayer() {
+    delete _aPktList;
+    delete _vPktList;
+    delete _aMutex;
+    delete _vMutex;
 
+    SDL_Quit();
 }
 
 #pragma mark - 公共方法
@@ -105,38 +102,25 @@ void VideoPlayer::readFile() {
     emit initFinished(this);
 
     // 从输入文件中读取数据
-    AVPacket pkt;
-    while (av_read_frame(_fmtCtx, &pkt) == 0) {
-        if (pkt.stream_index == _aStream->index) { // 读取到的是音频数据
-
-        } else if (pkt.stream_index == _vStream->index) { // 读取到的是视频数据
-
+    while (true) {
+        AVPacket pkt;
+        ret = av_read_frame(_fmtCtx, &pkt);
+        if (ret == 0) {
+            if (pkt.stream_index == _aStream->index) { // 读取到的是音频数据
+                addAudioPkt(pkt);
+            } else if (pkt.stream_index == _vStream->index) { // 读取到的是视频数据
+                addVideoPkt(pkt);
+            }
+        } else {
+            continue;
         }
     }
 
 end:
-    avcodec_free_context(&_aDecodeCtx);
-    avcodec_free_context(&_vDecodeCtx);
-    avformat_close_input(&_fmtCtx);
-}
-
-// 初始化音频信息
-int VideoPlayer::initAudioInfo() {
-    // 初始化解码器
-    int ret = initDecoder(&_aDecodeCtx, &_aStream, AVMEDIA_TYPE_AUDIO);
-    RET(initDecoder);
-
-    return 0;
-}
-
-// 初始化视频信息
-int VideoPlayer::initVideoInfo() {
-    // 初始化解码器
-    int ret = initDecoder(&_vDecodeCtx, &_vStream, AVMEDIA_TYPE_VIDEO);
-    RET(initDecoder);
-
-
-    return 0;
+    ;
+//    avcodec_free_context(&_aDecodeCtx);
+//    avcodec_free_context(&_vDecodeCtx);
+//    avformat_close_input(&_fmtCtx);
 }
 
 // 初始化解码器
@@ -188,3 +172,4 @@ void VideoPlayer::setState(State state) {
 
     emit stateChanged(this);
 }
+
