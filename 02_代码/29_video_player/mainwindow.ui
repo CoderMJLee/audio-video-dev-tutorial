@@ -174,7 +174,7 @@
         <item>
          <layout class="QHBoxLayout" name="horizontalLayout_4">
           <item>
-           <widget class="QPushButton" name="silenceBtn">
+           <widget class="QPushButton" name="muteBtn">
             <property name="enabled">
              <bool>false</bool>
             </property>

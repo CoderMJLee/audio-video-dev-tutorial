@@ -32,6 +32,8 @@ private slots:
 
     void on_playBtn_clicked();
 
+    void on_muteBtn_clicked();
+
 private:
     Ui::MainWindow *ui;
     VideoPlayer *_player;
