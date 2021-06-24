@@ -62,8 +62,9 @@ VideoPlayer::State VideoPlayer::getState() {
     return _state;
 }
 
-void VideoPlayer::setFilename(const char *filename) {
-    _filename = filename;
+void VideoPlayer::setFilename(QString &filename) {
+    const char *name = filename.toUtf8().data();
+    memcpy(_filename, name, strlen(name) + 1);
 }
 
 int64_t VideoPlayer::getDuration() {
@@ -108,8 +109,7 @@ void VideoPlayer::readFile() {
     // 初始化视频信息
     bool hasVideo = initVideoInfo() >= 0;
     if (!hasAudio && !hasVideo) {
-        emit playFailed(this);
-        free();
+        fataError();
         return;
     }
 
@@ -117,8 +117,8 @@ void VideoPlayer::readFile() {
     emit initFinished(this);
 
     // 从输入文件中读取数据
+    AVPacket pkt;
     while (_state != Stopped) {
-        AVPacket pkt;
         ret = av_read_frame(_fmtCtx, &pkt);
         if (ret == 0) {
             if (pkt.stream_index == _aStream->index) { // 读取到的是音频数据
@@ -192,5 +192,11 @@ void VideoPlayer::free() {
 
     freeAudio();
     freeVideo();
+}
+
+void VideoPlayer::fataError() {
+    setState(Stopped);
+    emit playFailed(this);
+    free();
 }
 

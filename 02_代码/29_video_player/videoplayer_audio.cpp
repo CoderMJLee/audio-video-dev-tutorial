@@ -104,6 +104,7 @@ int VideoPlayer::initSDL() {
     return 0;
 }
 
+// 引用：披着对象外衣的指针
 void VideoPlayer::addAudioPkt(AVPacket &pkt) {
     _aMutex.lock();
     _aPktList.push_back(pkt);
@@ -202,7 +203,6 @@ int VideoPlayer::decodeAudio() {
     AVPacket pkt = _aPktList.front();
     // 从头部中删除
     _aPktList.pop_front();
-
     // 解锁
     _aMutex.unlock();
 

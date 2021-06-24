@@ -10,28 +10,23 @@ extern "C" {
 #include <libavformat/avformat.h>
 #include <libavutil/avutil.h>
 #include <libswresample/swresample.h>
+#include <libswscale/swscale.h>
 }
 
 #define ERROR_BUF \
     char errbuf[1024]; \
     av_strerror(ret, errbuf, sizeof (errbuf));
 
-#define END(func) \
+#define CODE(func, code) \
     if (ret < 0) { \
         ERROR_BUF; \
         qDebug() << #func << "error" << errbuf; \
-        setState(Stopped); \
-        emit playFailed(this); \
-        free(); \
-        return; \
+        code; \
     }
 
-#define RET(func) \
-    if (ret < 0) { \
-        ERROR_BUF; \
-        qDebug() << #func << "error" << errbuf; \
-        return ret; \
-    }
+#define END(func) CODE(func, fataError(); return;)
+#define RET(func) CODE(func, return ret;)
+#define CONTINUE(func) CODE(func, continue;)
 
 /**
  * 预处理视频数据（不负责显示、渲染视频）
@@ -66,7 +61,7 @@ public:
     /** 获取当前的状态 */
     State getState();
     /** 设置文件名 */
-    void setFilename(const char *filename);
+    void setFilename(QString &filename);
     /** 获取总时长（单位是微秒，1秒=10^3毫秒=10^6微秒） */
     int64_t getDuration();
     /** 设置音量 */
@@ -136,8 +131,10 @@ private:
     AVCodecContext *_vDecodeCtx = nullptr;
     /** 流 */
     AVStream *_vStream = nullptr;
-    /** 存放解码后的数据 */
-    AVFrame *_vFrame = nullptr;
+    /** 视频像素格式转换的输入\输出frame */
+    AVFrame *_vSwsInFrame = nullptr, *_vSwsOutFrame = nullptr;
+    /** 像素格式转换的上下文 */
+    SwsContext *_vSwsCtx = nullptr;
     /** 存放视频包的列表 */
     std::list<AVPacket> _vPktList;
     /** 视频包列表的锁 */
@@ -146,17 +143,21 @@ private:
 
     /** 初始化视频信息 */
     int initVideoInfo();
+    /** 初始化视频像素格式转换 */
+    int initSws();
     /** 添加数据包到视频包列表中 */
     void addVideoPkt(AVPacket &pkt);
     /** 清空视频包列表 */
     void clearVideoPktList();
+    /** 解码视频 */
+    void decodeVideo();
 
 
     /******** 其他 ********/
     /** 当前的状态 */
     State _state = Stopped;
     /** 文件名 */
-    const char *_filename;
+    char _filename[512];
     /** 解封装上下文 */
     AVFormatContext *_fmtCtx = nullptr;
 
@@ -172,6 +173,8 @@ private:
     void free();
     void freeAudio();
     void freeVideo();
+    /** 严重错误 */
+    void fataError();
 };
 
 #endif // VIDEOPLAYER_H

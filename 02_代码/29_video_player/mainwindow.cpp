@@ -10,11 +10,6 @@ MainWindow::MainWindow(QWidget *parent)
     , ui(new Ui::MainWindow) {
     ui->setupUi(this);
 
-    // 设置音量滑块的范围
-    ui->volumnSlider->setRange(VideoPlayer::Volumn::Min,
-                               VideoPlayer::Volumn::Max);
-    ui->volumnSlider->setValue(ui->volumnSlider->maximum());
-
     // 创建播放器
     _player = new VideoPlayer();
     connect(_player, &VideoPlayer::stateChanged,
@@ -23,6 +18,11 @@ MainWindow::MainWindow(QWidget *parent)
             this, &MainWindow::onPlayerInitFinished);
     connect(_player, &VideoPlayer::playFailed,
             this, &MainWindow::onPlayerPlayFailed);
+
+    // 设置音量滑块的范围
+    ui->volumnSlider->setRange(VideoPlayer::Volumn::Min,
+                               VideoPlayer::Volumn::Max);
+    ui->volumnSlider->setValue(ui->volumnSlider->maximum());
 }
 
 MainWindow::~MainWindow() {
@@ -90,7 +90,7 @@ void MainWindow::on_openFileBtn_clicked() {
     if (filename.isEmpty()) return;
 
     // 开始播放打开的文件
-    _player->setFilename(filename.toUtf8().data());
+    _player->setFilename(filename);
     _player->play();
 
 //    QStringList filenames = QFileDialog::getOpenFileNames(nullptr,
