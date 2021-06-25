@@ -10,6 +10,9 @@ MainWindow::MainWindow(QWidget *parent)
     , ui(new Ui::MainWindow) {
     ui->setupUi(this);
 
+    // 注册信号的参数类型，保证能够发出信号
+    qRegisterMetaType<VideoPlayer::VideoSwsSpec>("VideoSwsSpec&");
+
     // 创建播放器
     _player = new VideoPlayer();
     connect(_player, &VideoPlayer::stateChanged,
@@ -18,6 +21,8 @@ MainWindow::MainWindow(QWidget *parent)
             this, &MainWindow::onPlayerInitFinished);
     connect(_player, &VideoPlayer::playFailed,
             this, &MainWindow::onPlayerPlayFailed);
+    connect(_player, &VideoPlayer::frameDecoded,
+            ui->videoWidget, &VideoWidget::onPlayerFrameDecoded);
 
     // 设置音量滑块的范围
     ui->volumnSlider->setRange(VideoPlayer::Volumn::Min,

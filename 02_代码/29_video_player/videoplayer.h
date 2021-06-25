@@ -27,6 +27,7 @@ extern "C" {
 #define END(func) CODE(func, fataError(); return;)
 #define RET(func) CODE(func, return ret;)
 #define CONTINUE(func) CODE(func, continue;)
+#define BREAK(func) CODE(func, break;)
 
 /**
  * 预处理视频数据（不负责显示、渲染视频）
@@ -46,6 +47,13 @@ public:
         Min = 0,
         Max = 100
     } Volumn;
+
+    // 视频frame参数
+    typedef struct {
+        int width;
+        int height;
+        AVPixelFormat pixFmt;
+    } VideoSwsSpec;
 
     explicit VideoPlayer(QObject *parent = nullptr);
     ~VideoPlayer();
@@ -75,6 +83,9 @@ signals:
     void stateChanged(VideoPlayer *player);
     void initFinished(VideoPlayer *player);
     void playFailed(VideoPlayer *player);
+    void frameDecoded(VideoPlayer *player,
+                      uint8_t *data,
+                      VideoSwsSpec &spec);
 
 private:
     /******** 音频相关 ********/
@@ -131,10 +142,12 @@ private:
     AVCodecContext *_vDecodeCtx = nullptr;
     /** 流 */
     AVStream *_vStream = nullptr;
-    /** 视频像素格式转换的输入\输出frame */
+    /** 像素格式转换的输入\输出frame */
     AVFrame *_vSwsInFrame = nullptr, *_vSwsOutFrame = nullptr;
     /** 像素格式转换的上下文 */
     SwsContext *_vSwsCtx = nullptr;
+    /** 像素格式转换的输出frame的参数 */
+    VideoSwsSpec _vSwsOutSpec;
     /** 存放视频包的列表 */
     std::list<AVPacket> _vPktList;
     /** 视频包列表的锁 */
