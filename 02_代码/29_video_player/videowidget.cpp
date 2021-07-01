@@ -9,10 +9,7 @@ VideoWidget::VideoWidget(QWidget *parent) : QWidget(parent) {
 }
 
 VideoWidget::~VideoWidget() {
-    if (_image) {
-        delete _image;
-        _image = nullptr;
-    }
+    freeImage();
 }
 
 void VideoWidget::paintEvent(QPaintEvent *event) {
@@ -22,18 +19,22 @@ void VideoWidget::paintEvent(QPaintEvent *event) {
     QPainter(this).drawImage(_rect, *_image);
 }
 
+void VideoWidget::onPlayerStateChanged(VideoPlayer *player) {
+    if (player->getState() != VideoPlayer::Stopped) return;
+
+    freeImage();
+    update();
+}
+
 void VideoWidget::onPlayerFrameDecoded(VideoPlayer *player,
                                        uint8_t *data,
                                        VideoPlayer::VideoSwsSpec &spec) {
     // 释放之前的图片
-    if (_image) {
-        delete _image;
-        _image = nullptr;
-    }
+    freeImage();
 
     // 创建新的图片
     if (data != nullptr) {
-        _image = new QImage((uchar *) data,
+        _image = new QImage(data,
                             spec.width, spec.height,
                             QImage::Format_RGB888);
 
@@ -67,4 +68,11 @@ void VideoWidget::onPlayerFrameDecoded(VideoPlayer *player,
     }
 
     update();
+}
+
+void VideoWidget::freeImage() {
+    if (_image) {
+        delete _image;
+        _image = nullptr;
+    }
 }

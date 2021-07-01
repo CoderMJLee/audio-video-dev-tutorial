@@ -10,3 +10,10 @@ int main(int argc, char *argv[]) {
     w.show();
     return a.exec();
 }
+
+/*
+音视频同步：
+1.视频同步到音频
+
+2.音频同步到视频
+*/

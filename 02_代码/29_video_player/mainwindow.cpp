@@ -17,12 +17,17 @@ MainWindow::MainWindow(QWidget *parent)
     _player = new VideoPlayer();
     connect(_player, &VideoPlayer::stateChanged,
             this, &MainWindow::onPlayerStateChanged);
+    connect(_player, &VideoPlayer::timeChanged,
+            this, &MainWindow::onPlayerTimeChanged);
     connect(_player, &VideoPlayer::initFinished,
             this, &MainWindow::onPlayerInitFinished);
     connect(_player, &VideoPlayer::playFailed,
             this, &MainWindow::onPlayerPlayFailed);
+
     connect(_player, &VideoPlayer::frameDecoded,
             ui->videoWidget, &VideoWidget::onPlayerFrameDecoded);
+    connect(_player, &VideoPlayer::stateChanged,
+            ui->videoWidget, &VideoWidget::onPlayerStateChanged);
 
     // 设置音量滑块的范围
     ui->volumnSlider->setRange(VideoPlayer::Volumn::Min,
@@ -41,13 +46,17 @@ void MainWindow::onPlayerPlayFailed(VideoPlayer *player) {
 }
 
 void MainWindow::onPlayerInitFinished(VideoPlayer *player) {
-    int64_t duration = player->getDuration();
+    int duration = player->getDuration();
 
     // 设置slider的范围
     ui->currentSlider->setRange(0, duration);
 
     // 设置label的文字
     ui->durationLabel->setText(getTimeText(duration));
+}
+
+void MainWindow::onPlayerTimeChanged(VideoPlayer *player) {
+    ui->currentSlider->setValue(player->getCurrent());
 }
 
 void MainWindow::onPlayerStateChanged(VideoPlayer *player) {
@@ -138,12 +147,11 @@ QString MainWindow::getTimeText(int value) {
 //    QString s = QString("0%1").arg(seconds % 60).right(2);
 //    return QString("%1:%2:%3").arg(h).arg(m).arg(s);
 
-    int64_t seconds =  value / 1000000;
     QLatin1Char fill = QLatin1Char('0');
     return QString("%1:%2:%3")
-           .arg(seconds / 3600, 2, 10, fill)
-           .arg((seconds / 60) % 60, 2, 10, fill)
-           .arg(seconds % 60, 2, 10, fill);
+           .arg(value / 3600, 2, 10, fill)
+           .arg((value / 60) % 60, 2, 10, fill)
+           .arg(value % 60, 2, 10, fill);
 }
 
 void MainWindow::on_muteBtn_clicked() {

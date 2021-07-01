@@ -2,6 +2,9 @@
 #include <thread>
 #include <QDebug>
 
+#define AUDIO_MAX_PKT_SIZE 1000
+#define VIDEO_MAX_PKT_SIZE 500
+
 #pragma mark - 构造、析构
 VideoPlayer::VideoPlayer(QObject *parent) : QObject(parent) {
     // 初始化Audio子系统
@@ -29,10 +32,10 @@ void VideoPlayer::play() {
         std::thread([this]() {
             readFile();
         }).detach();
+    } else {
+        // 改变状态
+        setState(Playing);
     }
-
-    // 改变状态
-    setState(Playing);
 }
 
 void VideoPlayer::pause() {
@@ -51,7 +54,11 @@ void VideoPlayer::stop() {
     setState(Stopped);
 
     // 释放资源
-    free();
+    std::thread([this]() {
+        SDL_Delay(100);
+
+        free();
+    }).detach();
 }
 
 bool VideoPlayer::isPlaying() {
@@ -63,12 +70,17 @@ VideoPlayer::State VideoPlayer::getState() {
 }
 
 void VideoPlayer::setFilename(QString &filename) {
-    const char *name = filename.toUtf8().data();
+//    const char *name = filename.toUtf8().data();
+    const char *name = filename.toStdString().c_str();
     memcpy(_filename, name, strlen(name) + 1);
 }
 
-int64_t VideoPlayer::getDuration() {
-    return _fmtCtx ? _fmtCtx->duration : 0;
+int VideoPlayer::getDuration() {
+    return _fmtCtx ? round(_fmtCtx->duration / 1000000.0) : 0;
+}
+
+int VideoPlayer::getCurrent() {
+    return round(_aClock);
 }
 
 void VideoPlayer::setVolumn(int volumn) {
@@ -116,15 +128,26 @@ void VideoPlayer::readFile() {
     // 到此为止，初始化完毕
     emit initFinished(this);
 
+    // 改变状态
+    setState(Playing);
+
     // 从输入文件中读取数据
     AVPacket pkt;
     while (_state != Stopped) {
+        if (_vPktList.size() >= VIDEO_MAX_PKT_SIZE ||
+                _aPktList.size() >= AUDIO_MAX_PKT_SIZE) {
+            SDL_Delay(10);
+            continue;
+        }
+
         ret = av_read_frame(_fmtCtx, &pkt);
         if (ret == 0) {
             if (pkt.stream_index == _aStream->index) { // 读取到的是音频数据
                 addAudioPkt(pkt);
             } else if (pkt.stream_index == _vStream->index) { // 读取到的是视频数据
                 addVideoPkt(pkt);
+            } else { // 如果不是音频、视频流，直接释放
+                av_packet_unref(&pkt);
             }
         } else if (ret == AVERROR_EOF) { // 读到了文件的尾部
             qDebug() << "已经读取到文件尾部";

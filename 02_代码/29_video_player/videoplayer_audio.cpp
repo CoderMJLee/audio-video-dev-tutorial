@@ -122,8 +122,10 @@ void VideoPlayer::clearAudioPktList() {
 }
 
 void VideoPlayer::freeAudio() {
+    _aClock = 0;
     _aSwrOutIdx = 0;
     _aSwrOutSize = 0;
+    _aStream = nullptr;
 
     clearAudioPktList();
     avcodec_free_context(&_aDecodeCtx);
@@ -173,7 +175,8 @@ void VideoPlayer::sdlAudioCallback(Uint8 *stream, int len) {
         fillLen = std::min(fillLen, len);
 
         // 获取当前音量
-        int volumn = _mute ? 0 : ((_volumn * 1.0 / Max) * SDL_MIX_MAXVOLUME);
+        // int volumn = _mute ? 0 : ((_volumn * 1.0 / Max) * SDL_MIX_MAXVOLUME);
+        int volumn = 50;
 
         // 填充SDL缓冲区
         SDL_MixAudio(stream,
@@ -194,7 +197,7 @@ int VideoPlayer::decodeAudio() {
 //    while (_aPktList.empty()) {
 //        _aMutex.wait();
 //    }
-    if (_aPktList.empty() || _state == Stopped) {
+    if (_aPktList.empty()) {
         _aMutex.unlock();
         return 0;
     }
@@ -205,6 +208,13 @@ int VideoPlayer::decodeAudio() {
     _aPktList.pop_front();
     // 解锁
     _aMutex.unlock();
+
+    // 保存音频时钟
+    if (pkt.pts != AV_NOPTS_VALUE) {
+        _aClock = av_q2d(_aStream->time_base) * pkt.pts;
+        // 通知外界：播放时间点发生了改变
+        emit timeChanged(this);
+    }
 
     // 发送压缩数据到解码器
     int ret = avcodec_send_packet(_aDecodeCtx, &pkt);
