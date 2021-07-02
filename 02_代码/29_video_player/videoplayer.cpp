@@ -17,7 +17,7 @@ VideoPlayer::VideoPlayer(QObject *parent) : QObject(parent) {
 }
 
 VideoPlayer::~VideoPlayer() {
-    free();
+    stop();
 
     SDL_Quit();
 }
@@ -51,14 +51,19 @@ void VideoPlayer::stop() {
     // 状态可能是：正在播放、暂停、正常完毕
 
     // 改变状态
-    setState(Stopped);
+//    setState(Stopped);
+    _state = Stopped;
 
     // 释放资源
-    std::thread([this]() {
-        SDL_Delay(100);
+    free();
 
-        free();
-    }).detach();
+    // 通知外界
+    emit stateChanged(this);
+
+//    std::thread([this]() {
+//        SDL_Delay(100);
+//        free();
+//    }).detach();
 }
 
 bool VideoPlayer::isPlaying() {
@@ -76,11 +81,16 @@ void VideoPlayer::setFilename(QString &filename) {
 }
 
 int VideoPlayer::getDuration() {
-    return _fmtCtx ? round(_fmtCtx->duration / 1000000.0) : 0;
+    return _fmtCtx ? round(_fmtCtx->duration * av_q2d(AV_TIME_BASE_Q)) : 0;
+    // return _fmtCtx ? round(_fmtCtx->duration / 1000000.0) : 0;
 }
 
-int VideoPlayer::getCurrent() {
-    return round(_aClock);
+int VideoPlayer::getTime() {
+    return round(_aTime);
+}
+
+void VideoPlayer::setTime(int seekTime) {
+    _seekTime = seekTime;
 }
 
 void VideoPlayer::setVolumn(int volumn) {
@@ -117,13 +127,21 @@ void VideoPlayer::readFile() {
     fflush(stderr);
 
     // 初始化音频信息
-    bool hasAudio = initAudioInfo() >= 0;
+    _hasAudio = initAudioInfo() >= 0;
     // 初始化视频信息
-    bool hasVideo = initVideoInfo() >= 0;
-    if (!hasAudio && !hasVideo) {
+    _hasVideo = initVideoInfo() >= 0;
+    if (!_hasAudio && !_hasVideo) {
         fataError();
         return;
     }
+//    // 初始化音频信息
+//    initAudioInfo();
+//    // 初始化视频信息
+//    initVideoInfo();
+//    if (!_aStream && !_vStream) {
+//        fataError();
+//        return;
+//    }
 
     // 到此为止，初始化完毕
     emit initFinished(this);
@@ -131,12 +149,49 @@ void VideoPlayer::readFile() {
     // 改变状态
     setState(Playing);
 
+    // 音频解码子线程：开始工作
+    SDL_PauseAudio(0);
+
+    // 视频解码子线程：开始工作
+    std::thread([this]() {
+        decodeVideo();
+    }).detach();
+
     // 从输入文件中读取数据
     AVPacket pkt;
     while (_state != Stopped) {
+        // 处理seek操作
+        if (_seekTime >= 0) {
+            int streamIdx;
+            if (_hasAudio) { // 优先使用音频流索引
+                streamIdx = _aStream->index;
+            } else {
+                streamIdx = _vStream->index;
+            }
+
+            // 现实时间 -> 时间戳
+            AVRational timeBase = _fmtCtx->streams[streamIdx]->time_base;
+            int64_t ts = _seekTime / av_q2d(timeBase);
+            ret = av_seek_frame(_fmtCtx, streamIdx, ts, AVSEEK_FLAG_BACKWARD);
+
+            if (ret < 0) { // seek失败
+                qDebug() << "seek失败" << _seekTime << ts << streamIdx;
+                _seekTime = -1;
+            } else {
+                qDebug() << "seek成功" << _seekTime << ts << streamIdx;
+                _seekTime = -1;
+                // 恢复时钟
+                _aTime = 0;
+                _vTime = 0;
+                // 清空之前读取的数据包
+                clearAudioPktList();
+                clearVideoPktList();
+            }
+        }
+
         if (_vPktList.size() >= VIDEO_MAX_PKT_SIZE ||
                 _aPktList.size() >= AUDIO_MAX_PKT_SIZE) {
-            SDL_Delay(10);
+//            SDL_Delay(10);
             continue;
         }
 
@@ -150,14 +205,15 @@ void VideoPlayer::readFile() {
                 av_packet_unref(&pkt);
             }
         } else if (ret == AVERROR_EOF) { // 读到了文件的尾部
-            qDebug() << "已经读取到文件尾部";
-            break;
+
         } else {
             ERROR_BUF;
             qDebug() << "av_read_frame error" << errbuf;
             continue;
         }
     }
+    // 标记一下：_fmtCtx可以释放了
+    _fmtCtxCanFree = true;
 }
 
 // 初始化解码器
@@ -172,7 +228,7 @@ int VideoPlayer::initDecoder(AVCodecContext **decodeCtx,
     // 检验流
     int streamIdx = ret;
     *stream = _fmtCtx->streams[streamIdx];
-    if (!stream) {
+    if (!*stream) {
         qDebug() << "stream is empty";
         return -1;
     }
@@ -211,15 +267,21 @@ void VideoPlayer::setState(State state) {
 }
 
 void VideoPlayer::free() {
+    while (_hasAudio && !_aCanFree);
+    while (_hasVideo && !_vCanFree);
+    while (!_fmtCtxCanFree);
     avformat_close_input(&_fmtCtx);
+    _fmtCtxCanFree = false;
+    _seekTime = -1;
 
     freeAudio();
     freeVideo();
 }
 
 void VideoPlayer::fataError() {
-    setState(Stopped);
+    // 配合stop能够调用成功
+    _state = Playing;
+    stop();
     emit playFailed(this);
-    free();
 }
 

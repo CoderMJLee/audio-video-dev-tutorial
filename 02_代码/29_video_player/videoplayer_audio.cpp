@@ -98,9 +98,6 @@ int VideoPlayer::initSDL() {
         return -1;
     }
 
-    // 开始播放
-    SDL_PauseAudio(0);
-
     return 0;
 }
 
@@ -122,10 +119,11 @@ void VideoPlayer::clearAudioPktList() {
 }
 
 void VideoPlayer::freeAudio() {
-    _aClock = 0;
+    _aTime = 0;
     _aSwrOutIdx = 0;
     _aSwrOutSize = 0;
     _aStream = nullptr;
+    _aCanFree = false;
 
     clearAudioPktList();
     avcodec_free_context(&_aDecodeCtx);
@@ -152,7 +150,10 @@ void VideoPlayer::sdlAudioCallback(Uint8 *stream, int len) {
 
     // len：SDL音频缓冲区剩余的大小（还未填充的大小）
     while (len > 0) {
-        if (_state == Stopped) break;
+        if (_state == Stopped) {
+            _aCanFree = true;
+            break;
+        }
 
         // 说明当前PCM的数据已经全部拷贝到SDL的音频缓冲区了
         // 需要解码下一个pkt，获取新的PCM数据
@@ -175,8 +176,7 @@ void VideoPlayer::sdlAudioCallback(Uint8 *stream, int len) {
         fillLen = std::min(fillLen, len);
 
         // 获取当前音量
-        // int volumn = _mute ? 0 : ((_volumn * 1.0 / Max) * SDL_MIX_MAXVOLUME);
-        int volumn = 50;
+        int volumn = _mute ? 0 : ((_volumn * 1.0 / Max) * SDL_MIX_MAXVOLUME);
 
         // 填充SDL缓冲区
         SDL_MixAudio(stream,
@@ -211,7 +211,7 @@ int VideoPlayer::decodeAudio() {
 
     // 保存音频时钟
     if (pkt.pts != AV_NOPTS_VALUE) {
-        _aClock = av_q2d(_aStream->time_base) * pkt.pts;
+        _aTime = av_q2d(_aStream->time_base) * pkt.pts;
         // 通知外界：播放时间点发生了改变
         emit timeChanged(this);
     }

@@ -29,6 +29,8 @@ void VideoWidget::onPlayerStateChanged(VideoPlayer *player) {
 void VideoWidget::onPlayerFrameDecoded(VideoPlayer *player,
                                        uint8_t *data,
                                        VideoPlayer::VideoSwsSpec &spec) {
+    if (player->getState() == VideoPlayer::Stopped) return;
+
     // 释放之前的图片
     freeImage();
 
@@ -72,6 +74,7 @@ void VideoWidget::onPlayerFrameDecoded(VideoPlayer *player,
 
 void VideoWidget::freeImage() {
     if (_image) {
+        av_free(_image->bits());
         delete _image;
         _image = nullptr;
     }

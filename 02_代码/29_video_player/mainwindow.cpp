@@ -29,10 +29,14 @@ MainWindow::MainWindow(QWidget *parent)
     connect(_player, &VideoPlayer::stateChanged,
             ui->videoWidget, &VideoWidget::onPlayerStateChanged);
 
+    // 监听时间滑块的点击
+    connect(ui->timeSlider, &VideoSlider::clicked,
+            this, &MainWindow::onSliderClicked);
+
     // 设置音量滑块的范围
     ui->volumnSlider->setRange(VideoPlayer::Volumn::Min,
                                VideoPlayer::Volumn::Max);
-    ui->volumnSlider->setValue(ui->volumnSlider->maximum());
+    ui->volumnSlider->setValue(ui->volumnSlider->maximum() >> 2);
 }
 
 MainWindow::~MainWindow() {
@@ -41,6 +45,10 @@ MainWindow::~MainWindow() {
 }
 
 #pragma mark - 私有方法
+void MainWindow::onSliderClicked(VideoSlider *slider) {
+    _player->setTime(slider->value());
+}
+
 void MainWindow::onPlayerPlayFailed(VideoPlayer *player) {
     QMessageBox::critical(nullptr, "提示", "哦豁，播放失败！");
 }
@@ -49,14 +57,14 @@ void MainWindow::onPlayerInitFinished(VideoPlayer *player) {
     int duration = player->getDuration();
 
     // 设置slider的范围
-    ui->currentSlider->setRange(0, duration);
+    ui->timeSlider->setRange(0, duration);
 
     // 设置label的文字
     ui->durationLabel->setText(getTimeText(duration));
 }
 
 void MainWindow::onPlayerTimeChanged(VideoPlayer *player) {
-    ui->currentSlider->setValue(player->getCurrent());
+    ui->timeSlider->setValue(player->getTime());
 }
 
 void MainWindow::onPlayerStateChanged(VideoPlayer *player) {
@@ -70,19 +78,19 @@ void MainWindow::onPlayerStateChanged(VideoPlayer *player) {
     if (state == VideoPlayer::Stopped) {
         ui->playBtn->setEnabled(false);
         ui->stopBtn->setEnabled(false);
-        ui->currentSlider->setEnabled(false);
+        ui->timeSlider->setEnabled(false);
         ui->volumnSlider->setEnabled(false);
         ui->muteBtn->setEnabled(false);
 
         ui->durationLabel->setText(getTimeText(0));
-        ui->currentSlider->setValue(0);
+        ui->timeSlider->setValue(0);
 
         // 显示打开文件的页面
         ui->playWidget->setCurrentWidget(ui->openFilePage);
     } else {
         ui->playBtn->setEnabled(true);
         ui->stopBtn->setEnabled(true);
-        ui->currentSlider->setEnabled(true);
+        ui->timeSlider->setEnabled(true);
         ui->volumnSlider->setEnabled(true);
         ui->muteBtn->setEnabled(true);
 
@@ -100,7 +108,6 @@ void MainWindow::on_openFileBtn_clicked() {
                        "选择多媒体文件",
                        "F:/res",
                        "多媒体文件 (*.mp4 *.avi *.mkv *.mp3 *.aac)");
-    qDebug() << "打开文件" << filename;
     if (filename.isEmpty()) return;
 
     // 开始播放打开的文件
@@ -117,8 +124,8 @@ void MainWindow::on_openFileBtn_clicked() {
 //    }
 }
 
-void MainWindow::on_currentSlider_valueChanged(int value) {
-    ui->currentLabel->setText(getTimeText(value));
+void MainWindow::on_timeSlider_valueChanged(int value) {
+    ui->timeLabel->setText(getTimeText(value));
 }
 
 void MainWindow::on_volumnSlider_valueChanged(int value) {

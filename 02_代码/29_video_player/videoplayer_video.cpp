@@ -14,11 +14,6 @@ int VideoPlayer::initVideoInfo() {
     ret = initSws();
     RET(initSws);
 
-    // 开启新的线程去解码视频数据
-    std::thread([this]() {
-        decodeVideo();
-    }).detach();
-
     return 0;
 }
 
@@ -30,6 +25,10 @@ int VideoPlayer::initSws() {
     _vSwsOutSpec.width = inW >> 4 << 4;
     _vSwsOutSpec.height = inH >> 4 << 4;
     _vSwsOutSpec.pixFmt = AV_PIX_FMT_RGB24;
+    _vSwsOutSpec.size = av_image_get_buffer_size(
+                            _vSwsOutSpec.pixFmt,
+                            _vSwsOutSpec.width,
+                            _vSwsOutSpec.height, 1);
 
     // 初始化像素格式转换的上下文
     _vSwsCtx = sws_getContext(inW,
@@ -41,6 +40,10 @@ int VideoPlayer::initSws() {
                               _vSwsOutSpec.pixFmt,
 
                               SWS_BILINEAR, nullptr, nullptr, nullptr);
+    if (!_vSwsCtx) {
+        qDebug() << "sws_getContext error";
+        return -1;
+    }
 
     // 初始化像素格式转换的输入frame
     _vSwsInFrame = av_frame_alloc();
@@ -95,12 +98,16 @@ void VideoPlayer::freeVideo() {
     sws_freeContext(_vSwsCtx);
     _vSwsCtx = nullptr;
     _vStream = nullptr;
-    _vClock = 0;
+    _vTime = 0;
+    _vCanFree = false;
 }
 
 void VideoPlayer::decodeVideo() {
     while (true) {
-        if (_state == Stopped) break;
+        if (_state == Stopped) {
+            _vCanFree = true;
+            break;
+        }
 
         _vMutex.lock();
 
@@ -119,7 +126,7 @@ void VideoPlayer::decodeVideo() {
 
         // 视频时钟
         if (pkt.dts != AV_NOPTS_VALUE) {
-            _vClock = av_q2d(_vStream->time_base) * pkt.dts;
+            _vTime = av_q2d(_vStream->time_base) * pkt.dts;
         }
 
         // 释放pkt
@@ -139,20 +146,21 @@ void VideoPlayer::decodeVideo() {
                       0, _vDecodeCtx->height,
                       _vSwsOutFrame->data, _vSwsOutFrame->linesize);
 
-            if (_aStream != nullptr) { // 有音频
+            if (_hasAudio) { // 有音频
                 // 如果视频包过早被解码出来，那就需要等待对应的音频时钟到达
-                while (_vClock > _aClock && _state == Playing) {
-                    SDL_Delay(5);
+                while (_vTime > _aTime && _state == Playing) {
+//                    SDL_Delay(5);
                 }
             } else {
                 // TODO 没有音频的情况
 
             }
 
+            // 把像素格式转换后的图片数据，拷贝一份出来
+            uint8_t *data = (uint8_t *) av_malloc(_vSwsOutSpec.size);
+            memcpy(data, _vSwsOutFrame->data[0], _vSwsOutSpec.size);
             // 发出信号
-            emit frameDecoded(this,
-                              _vSwsOutFrame->data[0],
-                              _vSwsOutSpec);
+            emit frameDecoded(this, data, _vSwsOutSpec);
         }
     }
 }

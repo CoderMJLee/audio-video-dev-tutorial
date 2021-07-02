@@ -53,6 +53,7 @@ public:
         int width;
         int height;
         AVPixelFormat pixFmt;
+        int size;
     } VideoSwsSpec;
 
     explicit VideoPlayer(QObject *parent = nullptr);
@@ -74,7 +75,9 @@ public:
     /** 获取总时长（单位是秒） */
     int getDuration();
     /** 当前的播放时刻（单位是秒） */
-    int getCurrent();
+    int getTime();
+    /** 设置当前的播放时刻（单位是秒） */
+    void setTime(int seekTime);
     /** 设置音量 */
     void setVolumn(int volumn);
     int getVolumn();
@@ -120,7 +123,11 @@ private:
     /** 音频重采样输出PCM的大小 */
     int _aSwrOutSize = 0;
     /** 音频时钟，当前音频包对应的时间值 */
-    double _aClock = 0;
+    double _aTime = 0;
+    /** 音频资源是否可以释放 */
+    bool _aCanFree = false;
+    /** 是否有音频流 */
+    bool _hasAudio = false;
 
     /** 初始化音频信息 */
     int initAudioInfo();
@@ -155,8 +162,11 @@ private:
     /** 视频包列表的锁 */
     CondMutex _vMutex;
     /** 视频时钟，当前视频包对应的时间值 */
-    double _vClock = 0;
-
+    double _vTime = 0;
+    /** 视频资源是否可以释放 */
+    bool _vCanFree = false;
+    /** 是否有视频流 */
+    bool _hasVideo = false;
 
     /** 初始化视频信息 */
     int initVideoInfo();
@@ -171,6 +181,10 @@ private:
 
 
     /******** 其他 ********/
+    /** 解封装上下文 */
+    AVFormatContext *_fmtCtx = nullptr;
+    /** fmtCtx是否可以释放 */
+    bool _fmtCtxCanFree = false;
     /** 音量 */
     int _volumn = Max;
     /** 静音 */
@@ -179,8 +193,8 @@ private:
     State _state = Stopped;
     /** 文件名 */
     char _filename[512];
-    /** 解封装上下文 */
-    AVFormatContext *_fmtCtx = nullptr;
+    /** 外面设置的当前播放时刻（用于完成seek功能） */
+    int _seekTime = -1;
 
     /** 初始化解码器和解码上下文 */
     int initDecoder(AVCodecContext **decodeCtx,
