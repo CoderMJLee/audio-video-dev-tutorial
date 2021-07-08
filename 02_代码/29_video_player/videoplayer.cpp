@@ -17,6 +17,9 @@ VideoPlayer::VideoPlayer(QObject *parent) : QObject(parent) {
 }
 
 VideoPlayer::~VideoPlayer() {
+    // 不再对外发送消息
+    disconnect();
+
     stop();
 
     SDL_Quit();
@@ -179,6 +182,8 @@ void VideoPlayer::readFile() {
                 _seekTime = -1;
             } else {
                 qDebug() << "seek成功" << _seekTime << ts << streamIdx;
+                _vSeekTime = _seekTime;
+                _aSeekTime = _seekTime;
                 _seekTime = -1;
                 // 恢复时钟
                 _aTime = 0;
@@ -189,8 +194,11 @@ void VideoPlayer::readFile() {
             }
         }
 
-        if (_vPktList.size() >= VIDEO_MAX_PKT_SIZE ||
-                _aPktList.size() >= AUDIO_MAX_PKT_SIZE) {
+        int vSize = _vPktList.size();
+        int aSize = _aPktList.size();
+
+        if (vSize >= VIDEO_MAX_PKT_SIZE ||
+                aSize >= AUDIO_MAX_PKT_SIZE) {
 //            SDL_Delay(10);
             continue;
         }
@@ -205,15 +213,23 @@ void VideoPlayer::readFile() {
                 av_packet_unref(&pkt);
             }
         } else if (ret == AVERROR_EOF) { // 读到了文件的尾部
-
+            if (vSize == 0 && aSize == 0) {
+                // 说明文件正常播放完毕
+                _fmtCtxCanFree = true;
+                break;
+            }
         } else {
             ERROR_BUF;
             qDebug() << "av_read_frame error" << errbuf;
             continue;
         }
     }
-    // 标记一下：_fmtCtx可以释放了
-    _fmtCtxCanFree = true;
+    if (_fmtCtxCanFree) { // 文件正常播放完毕
+        stop();
+    } else {
+        // 标记一下：_fmtCtx可以释放了
+        _fmtCtxCanFree = true;
+    }
 }
 
 // 初始化解码器

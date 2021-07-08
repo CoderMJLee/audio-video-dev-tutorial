@@ -36,7 +36,7 @@ MainWindow::MainWindow(QWidget *parent)
     // 设置音量滑块的范围
     ui->volumnSlider->setRange(VideoPlayer::Volumn::Min,
                                VideoPlayer::Volumn::Max);
-    ui->volumnSlider->setValue(ui->volumnSlider->maximum() >> 2);
+    ui->volumnSlider->setValue(ui->volumnSlider->maximum() >> 3);
 }
 
 MainWindow::~MainWindow() {

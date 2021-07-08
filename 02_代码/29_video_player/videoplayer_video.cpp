@@ -100,10 +100,16 @@ void VideoPlayer::freeVideo() {
     _vStream = nullptr;
     _vTime = 0;
     _vCanFree = false;
+    _vSeekTime = -1;
 }
 
 void VideoPlayer::decodeVideo() {
     while (true) {
+        // 如果是暂停，并且没有Seek操作
+        if (_state == Paused && _vSeekTime == -1) {
+            continue;
+        }
+
         if (_state == Stopped) {
             _vCanFree = true;
             break;
@@ -121,14 +127,13 @@ void VideoPlayer::decodeVideo() {
         _vPktList.pop_front();
         _vMutex.unlock();
 
-        // 发送压缩数据到解码器
-        int ret = avcodec_send_packet(_vDecodeCtx, &pkt);
-
         // 视频时钟
         if (pkt.dts != AV_NOPTS_VALUE) {
             _vTime = av_q2d(_vStream->time_base) * pkt.dts;
         }
 
+        // 发送压缩数据到解码器
+        int ret = avcodec_send_packet(_vDecodeCtx, &pkt);
         // 释放pkt
         av_packet_unref(&pkt);
         CONTINUE(avcodec_send_packet);
@@ -139,6 +144,16 @@ void VideoPlayer::decodeVideo() {
             if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) {
                 break;
             } else BREAK(avcodec_receive_frame);
+
+            // 一定要在解码成功后，再进行下面的判断
+            // 发现视频的时间是早于seekTime的，直接丢弃
+            if (_vSeekTime >= 0) {
+                if (_vTime < _vSeekTime) {
+                    continue;
+                } else {
+                    _vSeekTime = -1;
+                }
+            }
 
             // 像素格式的转换
             sws_scale(_vSwsCtx,
@@ -161,6 +176,7 @@ void VideoPlayer::decodeVideo() {
             memcpy(data, _vSwsOutFrame->data[0], _vSwsOutSpec.size);
             // 发出信号
             emit frameDecoded(this, data, _vSwsOutSpec);
+            qDebug() << "渲染了一帧" << _vTime << _aTime;
         }
     }
 }
